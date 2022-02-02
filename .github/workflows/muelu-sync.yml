@@ -22,11 +22,11 @@ jobs:
         source_repo: https://github.com/trilinos/Trilinos.git
         source_branch: master
         destination_branch: master
-        github_token: ${{ secrets.GITHUB_TOKEN }}
+        github_token: ${{ secrets.WORKFLOW_TOKEN }}
     - name: repo-sync-develop
       uses: repo-sync/github-sync@v2.3.0
       with:
         source_repo: https://github.com/trilinos/Trilinos.git
         source_branch: develop
         destination_branch: develop
-        github_token: ${{ secrets.GITHUB_TOKEN }}
+        github_token: ${{ secrets.WORKFLOW_TOKEN }}
