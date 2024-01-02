@@ -35,14 +35,14 @@ jobs:
       if: ${{ hashFiles('format_patch.txt') != '' }}          
       with:
         env:
-          repo: $GITHUB_REPOSITORY
-          run_id: $GITHUB_RUN_ID 
+          my_repo: $GITHUB_REPOSITORY
+          my_run_id: $GITHUB_RUN_ID 
         script: |
           github.rest.issues.createComment({
             issue_number: context.issue.number,
             owner: context.repo.owner,
             repo: context.repo.repo,
-            body: "Your PR updated files in MueLu, but does not respect the Clang Formatting.  Please apply the patch found [here](https://github.com/${{ repo }}/actions/runs/${{ run_id }}/artifacts/${{ steps.upload-artf.outputs.artifact-id }})"
+            body: "Your PR updated files in MueLu, but does not respect the Clang Formatting.  Please apply the patch found [here](https://github.com/${{ my_repo }}/actions/runs/${{ my_run_id }}/artifacts/${{ steps.upload-artf.outputs.artifact-id }})"
             })
         
     - uses: actions/github-script@v3
