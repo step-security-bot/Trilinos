@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "ioex_export.h"
+
 #include "Ioss_DatabaseIO.h" // for DatabaseIO
 #include <Ioss_CodeTypes.h>
 #include <Ioss_DBUsage.h>   // for DatabaseUsage
@@ -17,7 +19,7 @@ namespace Ioss {
 
 namespace Ioex {
 
-  class IOFactory : public Ioss::IOFactory
+  class IOEX_EXPORT IOFactory : public Ioss::IOFactory
   {
   public:
     static const IOFactory *factory();
@@ -25,7 +27,7 @@ namespace Ioex {
   private:
     IOFactory();
     Ioss::DatabaseIO *make_IO(const std::string &filename, Ioss::DatabaseUsage db_usage,
-                              MPI_Comm                     communicator,
+                              Ioss_MPI_Comm                communicator,
                               const Ioss::PropertyManager &properties) const override;
     std::string       show_config() const override;
   };

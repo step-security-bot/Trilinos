@@ -44,6 +44,7 @@
 #include <Tpetra_Details_temporaryViewUtils.hpp>
 #include <Kokkos_DualView.hpp>
 #include "Teuchos_TestForException.hpp"
+#include "Tpetra_Details_ExecutionSpaces.hpp"
 #include <sstream>
 
 //#define DEBUG_UVM_REMOVAL  // Works only with gcc > 4.8
@@ -76,11 +77,6 @@ namespace Tpetra {
   // We really need this forward declaration here for friend to work
   template<typename SC, typename LO, typename GO, typename NO>
   class MultiVector;
-#ifdef TPETRA_ENABLE_DEPRECATED_CODE
-  // Need this friend only until deprecated code is removed
-  template<typename SC, typename LO, typename GO, typename NO>
-  class BlockMultiVector;
-#endif // TPETRA_ENABLE_DEPRECATED_CODE
 
 
 /// \brief Namespace for Tpetra implementation details.
@@ -105,6 +101,7 @@ using enableIfNonConstData = std::enable_if_t<!hasConstData<DualViewType>::value
 template <typename DualViewType>
 enableIfNonConstData<DualViewType>
 sync_host(DualViewType dualView) {
+  // This will sync, but only if needed
   dualView.sync_host();
 }
 
@@ -115,16 +112,33 @@ sync_host(DualViewType dualView) { }
 template <typename DualViewType>
 enableIfNonConstData<DualViewType>
 sync_device(DualViewType dualView) {
-  dualView.sync_device();
+  // This will sync, but only if needed
+    dualView.sync_device();
 }
 
 template <typename DualViewType>
 enableIfConstData<DualViewType>
 sync_device(DualViewType dualView) { }
 
-}
+}// end namespace Impl
 
+/// \brief Whether WrappedDualView reference count checking is enabled. Initially true.
+/// Since the DualView sync functions are not thread-safe, tracking should be disabled
+/// during host-parallel regions where WrappedDualView is used.
 
+extern bool wdvTrackingEnabled;
+
+/// \brief Disable WrappedDualView reference-count tracking and syncing.
+/// Call this before entering a host-parallel region that uses WrappedDualView.
+/// For each WrappedDualView used in the parallel region, its view must be accessed
+/// (e.g. getHostView...) before disabling the tracking, so that it may be synced and marked modified correctly.
+void disableWDVTracking();
+
+//! Enable WrappedDualView reference-count tracking and syncing. Call this after exiting a host-parallel region that uses WrappedDualView.
+void enableWDVTracking();
+
+/// \brief A wrapper around Kokkos::DualView to safely manage data
+///        that might be replicated between host and device.
 template <typename DualViewType>
 class WrappedDualView {
 public:
@@ -141,6 +155,10 @@ private:
   static constexpr bool deviceMemoryIsHostAccessible =
     Kokkos::SpaceAccessibility<Kokkos::DefaultHostExecutionSpace, typename t_dev::memory_space>::accessible;
 
+private:
+  template <typename>
+  friend class WrappedDualView;
+
 public:
   WrappedDualView() {}
 
@@ -148,6 +166,21 @@ public:
     : originalDualView(dualV),
       dualView(originalDualView)
   { }
+
+  //! Conversion copy constructor.
+  template <class SrcDualViewType>
+  WrappedDualView(const WrappedDualView<SrcDualViewType>& src)
+    : originalDualView(src.originalDualView),
+      dualView(src.dualView)
+  { }
+  
+  //! Conversion assignment operator.
+  template <class SrcDualViewType>
+  WrappedDualView& operator=(const WrappedDualView<SrcDualViewType>& src) {
+    originalDualView = src.originalDualView;
+    dualView = src.dualView;
+    return *this;
+  }
 
   // This is an expert-only constructor
   // For WrappedDualView to manage synchronizations correctly,
@@ -172,11 +205,14 @@ public:
     t_host hostView;
     if(deviceView.use_count() != 0)
     {
-      hostView = Kokkos::create_mirror_view_and_copy(
+      hostView = Kokkos::create_mirror_view(
+          Kokkos::WithoutInitializing,
           typename t_host::memory_space(),
           deviceView);
     }
     originalDualView = DualViewType(deviceView, hostView);
+    originalDualView.clear_sync_state();
+    originalDualView.modify_device();
     dualView = originalDualView;
   }
 
@@ -188,12 +224,12 @@ public:
 
 
   // 2D View Constructors
-  WrappedDualView(const WrappedDualView parent,const Kokkos::pair<size_t,size_t>& rowRng, const Kokkos::Impl::ALL_t& colRng) {
+  WrappedDualView(const WrappedDualView parent,const Kokkos::pair<size_t,size_t>& rowRng, const Kokkos::ALL_t& colRng) {
     originalDualView = parent.originalDualView;
     dualView = getSubview2D(parent.dualView,rowRng,colRng);
   }
 
-  WrappedDualView(const WrappedDualView parent,const Kokkos::Impl::ALL_t &rowRng, const Kokkos::pair<size_t,size_t>& colRng) {
+  WrappedDualView(const WrappedDualView parent,const Kokkos::ALL_t &rowRng, const Kokkos::pair<size_t,size_t>& colRng) {
     originalDualView = parent.originalDualView;
     dualView = getSubview2D(parent.dualView,rowRng,colRng);
   }
@@ -227,6 +263,7 @@ public:
   ) const
   {
     DEBUG_UVM_REMOVAL_PRINT_CALLER("getHostViewReadOnly");
+    
     if(needsSyncPath()) {
       throwIfDeviceViewAlive();
       impl::sync_host(originalDualView);
@@ -264,7 +301,7 @@ public:
     }
     if(needsSyncPath()) {
       throwIfDeviceViewAlive();
-      if (deviceMemoryIsHostAccessible) Kokkos::fence();
+      if (deviceMemoryIsHostAccessible) Kokkos::fence("WrappedDualView::getHostView");
       dualView.clear_sync_state();
       dualView.modify_host();
     }
@@ -313,7 +350,7 @@ public:
     }
     if(needsSyncPath()) {
       throwIfHostViewAlive();
-      if (deviceMemoryIsHostAccessible) Kokkos::fence();
+      if (deviceMemoryIsHostAccessible) Kokkos::fence("WrappedDualView::getDeviceView");
       dualView.clear_sync_state();
       dualView.modify_device();
     }
@@ -556,11 +593,6 @@ public:
   // but we'd very much prefer that users not.
   template<typename SC, typename LO, typename GO, typename NO>
   friend class ::Tpetra::MultiVector;
-#ifdef TPETRA_ENABLE_DEPRECATED_CODE
-  // Need this friend only until deprecated code is removed
-  template<typename SC, typename LO, typename GO, typename NO>
-  friend class ::Tpetra::BlockMultiVector;
-#endif // TPETRA_ENABLE_DEPRECATED_CODE
 
 private:
   // A Kokkos implementation of WrappedDualView will have to make these
@@ -580,12 +612,12 @@ private:
   }
 
   template <typename ViewType,typename int_type>
-  ViewType getSubview2D(ViewType view, Kokkos::pair<int_type,int_type> offset0, const Kokkos::Impl::ALL_t&) const {
+  ViewType getSubview2D(ViewType view, Kokkos::pair<int_type,int_type> offset0, const Kokkos::ALL_t&) const {
     return Kokkos::subview(view,offset0,Kokkos::ALL());
   }
 
   template <typename ViewType,typename int_type>
-  ViewType getSubview2D(ViewType view, const Kokkos::Impl::ALL_t&, Kokkos::pair<int_type,int_type> offset1) const {
+  ViewType getSubview2D(ViewType view, const Kokkos::ALL_t&, Kokkos::pair<int_type,int_type> offset1) const {
     return Kokkos::subview(view,Kokkos::ALL(),offset1);
   }
 
@@ -594,33 +626,35 @@ private:
     return Kokkos::subview(view,offset0,offset1);
   }
 
-
   bool memoryIsAliased() const {
     return deviceMemoryIsHostAccessible && dualView.h_view.data() == dualView.d_view.data();
   }
 
-  bool needsSyncPath() const {
-    // needsSyncPath tells us whether we need the "sync path" where we (potentially) fence,
-    // check use counts and take care of sync/modify for the underlying DualView
-    //
-    // The logic is this:
-    // 1) For non-CUDA archtectures where there the host/device pointers are aliased
-    // we don't need the "sync path."
-    // 2) For CUDA, we always need the "sync path" if we're using the CudaUVMSpace (we need to make sure
-    // to fence before reading memory on host) OR if the host/device pointers are aliased.
-    //
-    // Avoiding the "sync path" speeds up calculations on architectures where we can
-    // avoid it (e.g. SerialNode) by not not touching the modify flags.
-    //
-    // Note for the future: Memory spaces that can be addressed on both host and device
-    // that don't otherwise have an intrinsic fencing mechanism will need to trigger the
-    // "sync path"
 
-#ifdef KOKKOS_ENABLE_CUDA
-    return std::is_same<typename t_dev::memory_space,Kokkos::CudaUVMSpace>::value || !memoryIsAliased();
-#else
-    return !memoryIsAliased();
-#endif
+  /// \brief needsSyncPath tells us whether we need the "sync path" where we (potentially) fence,
+  ///        check use counts and take care of sync/modify for the underlying DualView.
+  ///
+  /// The logic is this:
+  /// 1. If WrappedDualView tracking is disabled, then never take the sync path.
+  /// 2. For non-GPU architectures where the host/device pointers are aliased
+  ///    we don't need the "sync path."
+  /// 3. For GPUs, we always need the "sync path."  For shared host/device memory (e.g. CudaUVM)
+  ///    the Kokkos::deep_copy in the sync is a no-op, but the fence associated with it matters.
+  ///
+  ///
+  /// Avoiding the "sync path" speeds up calculations on architectures where we can
+  /// avoid it (e.g. SerialNode) by not not touching the modify flags.
+  ///
+  /// Note for the future: Memory spaces that can be addressed on both host and device
+  /// that don't otherwise have an intrinsic fencing mechanism will need to trigger the
+  /// "sync path"
+  bool needsSyncPath() const {
+    if(!wdvTrackingEnabled)
+      return false;
+
+    // We check to see if the memory is not aliased *or* if it is a supported
+    // (heterogeneous memory) accelerator (for shared host/device memory).
+    return !memoryIsAliased() || Spaces::is_gpu_exec_space<typename DualViewType::execution_space>();
   }
 
 

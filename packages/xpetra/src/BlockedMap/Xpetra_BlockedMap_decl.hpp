@@ -60,7 +60,7 @@ namespace Xpetra {
 
 template<class LocalOrdinal,
          class GlobalOrdinal,
-         class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+         class Node = Tpetra::KokkosClassic::DefaultNode::DefaultNodeType>
 class BlockedMap : public Map<LocalOrdinal, GlobalOrdinal, Node>
 {
   public:
@@ -68,6 +68,7 @@ class BlockedMap : public Map<LocalOrdinal, GlobalOrdinal, Node>
     typedef LocalOrdinal  local_ordinal_type;
     typedef GlobalOrdinal global_ordinal_type;
     typedef Node          node_type;
+    typedef typename Map<LocalOrdinal,GlobalOrdinal,Node>::global_indices_array_device_type global_indices_array_device_type;
 
   private:
 
@@ -125,7 +126,7 @@ class BlockedMap : public Map<LocalOrdinal, GlobalOrdinal, Node>
 
 
     //! The number of elements belonging to the calling process.
-    virtual size_t getNodeNumElements() const;
+    virtual size_t getLocalNumElements() const;
 
 
     //! The index base for this Map.
@@ -176,9 +177,11 @@ class BlockedMap : public Map<LocalOrdinal, GlobalOrdinal, Node>
 
 
     //! Return a view of the global indices owned by this process.
-    virtual Teuchos::ArrayView<const GlobalOrdinal> getNodeElementList() const;
+    virtual Teuchos::ArrayView<const GlobalOrdinal> getLocalElementList() const;
 
-
+    //! Return a view of the global indices owned by this process.
+    virtual global_indices_array_device_type getMyGlobalIndicesDevice() const;
+    
     //@}
 
 
@@ -317,7 +320,6 @@ class BlockedMap : public Map<LocalOrdinal, GlobalOrdinal, Node>
     size_t getMapIndexForGID(GlobalOrdinal gid) const;
 
 
-#ifdef HAVE_XPETRA_KOKKOS_REFACTOR
     #ifdef HAVE_XPETRA_TPETRA
         using local_map_type = typename Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>::local_map_type;
 
@@ -329,7 +331,6 @@ class BlockedMap : public Map<LocalOrdinal, GlobalOrdinal, Node>
             #warning "Xpetra Kokkos interface for CrsMatrix is enabled (HAVE_XPETRA_KOKKOS_REFACTOR) but Tpetra is disabled. The Kokkos interface needs Tpetra to be enabled, too."
         #endif  // __GNUC__
     #endif  // #else !HAVE_XPETRA_TPETRA
-#endif  // HAVE_XPETRA_KOKKOS_REFACTOR
 
 
     //@}

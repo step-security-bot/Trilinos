@@ -56,10 +56,8 @@
 #include "Thyra_BlockedLinearOpBase.hpp"
 #include "Thyra_DiagonalLinearOpBase.hpp"
 #include "Thyra_XpetraLinearOp.hpp"
-#ifdef HAVE_MUELU_TPETRA
 #include "Thyra_TpetraLinearOp.hpp"
 #include "Thyra_TpetraThyraWrappers.hpp"
-#endif
 #ifdef HAVE_MUELU_EPETRA
 #include "Thyra_EpetraLinearOp.hpp"
 #endif
@@ -79,103 +77,104 @@
 #include <MueLu_HierarchyUtils.hpp>
 #include <MueLu_Utilities.hpp>
 #include <MueLu_ParameterListInterpreter.hpp>
-#include <MueLu_MLParameterListInterpreter.hpp>
 #include <MueLu_MasterList.hpp>
-#include <MueLu_XpetraOperator_decl.hpp> // todo fix me
+#include <MueLu_XpetraOperator_decl.hpp>  // todo fix me
 #include <MueLu_CreateXpetraPreconditioner.hpp>
-#ifdef HAVE_MUELU_TPETRA
 #include <MueLu_TpetraOperator.hpp>
 #include <Xpetra_TpetraHalfPrecisionOperator.hpp>
-#endif
 #ifdef HAVE_MUELU_EPETRA
 #include <MueLu_EpetraOperator.hpp>
 #endif
 
 #include "Thyra_PreconditionerFactoryBase.hpp"
 
-#include "Kokkos_DefaultNode.hpp"
+#include <Tpetra_KokkosCompat_DefaultNode.hpp>
 
 #include <list>
 
 namespace Thyra {
 
-  using Teuchos::RCP;
-  using Teuchos::rcp;
+using Teuchos::RCP;
+using Teuchos::rcp;
 
-  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+struct Converters {
   static bool replaceWithXpetra(ParameterList& paramList, std::string parameterName);
+};
 
-  /** @brief Concrete preconditioner factory subclass for Thyra based on MueLu.
-      @ingroup MueLuAdapters
-      Add support for MueLu preconditioners in Thyra. This class provides an interface both
-      for Epetra and Tpetra.
-  */
-  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node = KokkosClassic::DefaultNode::DefaultNodeType>
-  class MueLuPreconditionerFactory : public PreconditionerFactoryBase<Scalar> {
-  public:
+#ifdef HAVE_MUELU_EPETRA
+template <class GlobalOrdinal>
+struct Converters<double, int, GlobalOrdinal, Tpetra::KokkosCompat::KokkosSerialWrapperNode> {
+  static bool replaceWithXpetra(ParameterList& paramList, std::string parameterName);
+};
+#endif
 
-    /** @name Constructors/initializers/accessors */
-    //@{
+/** @brief Concrete preconditioner factory subclass for Thyra based on MueLu.
+    @ingroup MueLuAdapters
+    Add support for MueLu preconditioners in Thyra. This class provides an interface both
+    for Epetra and Tpetra.
+*/
+template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node = Tpetra::KokkosClassic::DefaultNode::DefaultNodeType>
+class MueLuPreconditionerFactory : public PreconditionerFactoryBase<Scalar> {
+ public:
+  /** @name Constructors/initializers/accessors */
+  //@{
 
-    /** \brief . */
-    MueLuPreconditionerFactory();
-    //@}
+  /** \brief . */
+  MueLuPreconditionerFactory();
+  //@}
 
-    /** @name Overridden from PreconditionerFactoryBase */
-    //@{
+  /** @name Overridden from PreconditionerFactoryBase */
+  //@{
 
-    /** \brief . */
-    bool isCompatible(const LinearOpSourceBase<Scalar>& fwdOp) const;
-    /** \brief . */
-    Teuchos::RCP<PreconditionerBase<Scalar> > createPrec() const;
-    /** \brief . */
-    void initializePrec(const Teuchos::RCP<const LinearOpSourceBase<Scalar> >& fwdOp,
-                        PreconditionerBase<Scalar>* prec,
-                        const ESupportSolveUse supportSolveUse
-                       ) const;
-    /** \brief . */
-    void uninitializePrec(PreconditionerBase<Scalar>* prec,
-                          Teuchos::RCP<const LinearOpSourceBase<Scalar> >* fwdOp,
-                          ESupportSolveUse* supportSolveUse
-                         ) const;
+  /** \brief . */
+  bool isCompatible(const LinearOpSourceBase<Scalar>& fwdOp) const;
+  /** \brief . */
+  Teuchos::RCP<PreconditionerBase<Scalar> > createPrec() const;
+  /** \brief . */
+  void initializePrec(const Teuchos::RCP<const LinearOpSourceBase<Scalar> >& fwdOp,
+                      PreconditionerBase<Scalar>* prec,
+                      const ESupportSolveUse supportSolveUse) const;
+  /** \brief . */
+  void uninitializePrec(PreconditionerBase<Scalar>* prec,
+                        Teuchos::RCP<const LinearOpSourceBase<Scalar> >* fwdOp,
+                        ESupportSolveUse* supportSolveUse) const;
 
-    //@}
+  //@}
 
-    /** @name Overridden from Teuchos::ParameterListAcceptor */
-    //@{
+  /** @name Overridden from Teuchos::ParameterListAcceptor */
+  //@{
 
-    /** \brief . */
-    void                                          setParameterList(const Teuchos::RCP<Teuchos::ParameterList>& paramList);
-    /** \brief . */
-    Teuchos::RCP<Teuchos::ParameterList>          unsetParameterList();
-    /** \brief . */
-    Teuchos::RCP<Teuchos::ParameterList>          getNonconstParameterList();
-    /** \brief . */
-    Teuchos::RCP<const Teuchos::ParameterList>    getParameterList() const;
-    /** \brief . */
-    Teuchos::RCP<const Teuchos::ParameterList>    getValidParameters() const;
-    //@}
+  /** \brief . */
+  void setParameterList(const Teuchos::RCP<Teuchos::ParameterList>& paramList);
+  /** \brief . */
+  Teuchos::RCP<Teuchos::ParameterList> unsetParameterList();
+  /** \brief . */
+  Teuchos::RCP<Teuchos::ParameterList> getNonconstParameterList();
+  /** \brief . */
+  Teuchos::RCP<const Teuchos::ParameterList> getParameterList() const;
+  /** \brief . */
+  Teuchos::RCP<const Teuchos::ParameterList> getValidParameters() const;
+  //@}
 
-    /** \name Public functions overridden from Describable. */
-    //@{
+  /** \name Public functions overridden from Describable. */
+  //@{
 
-    /** \brief . */
-    std::string description() const;
+  /** \brief . */
+  std::string description() const;
 
-    // ToDo: Add an override of describe(...) to give more detail!
+  // ToDo: Add an override of describe(...) to give more detail!
 
-    //@}
+  //@}
 
-  private:
+ private:
+  // Teuchos::RCP<MueLu::Hierarchy<Scalar,LocalOrdinal,GlobalOrdinal,Node> > CreateXpetraPreconditioner(Teuchos::RCP<Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > op, const Teuchos::ParameterList& paramList, Teuchos::RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType, LocalOrdinal, GlobalOrdinal, Node> > coords, Teuchos::RCP<Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> > nullspace) const;
 
-    //Teuchos::RCP<MueLu::Hierarchy<Scalar,LocalOrdinal,GlobalOrdinal,Node> > CreateXpetraPreconditioner(Teuchos::RCP<Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > op, const Teuchos::ParameterList& paramList, Teuchos::RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType, LocalOrdinal, GlobalOrdinal, Node> > coords, Teuchos::RCP<Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> > nullspace) const;
+  Teuchos::RCP<Teuchos::ParameterList> paramList_;
+};
 
-    Teuchos::RCP<Teuchos::ParameterList> paramList_;
+}  // namespace Thyra
 
-  };
+#endif  // #ifdef HAVE_MUELU_STRATIMIKOS
 
-} // namespace Thyra
-
-#endif // #ifdef HAVE_MUELU_STRATIMIKOS
-
-#endif // THYRA_MUELU_PRECONDITIONER_FACTORY_DECL_HPP
+#endif  // THYRA_MUELU_PRECONDITIONER_FACTORY_DECL_HPP

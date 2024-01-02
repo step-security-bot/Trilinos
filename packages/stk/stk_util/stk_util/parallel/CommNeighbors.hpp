@@ -74,7 +74,8 @@
 #undef STK_MPI_SUPPORTS_NEIGHBOR_COMM
 #endif
 
-#ifdef __INTEL_COMPILER
+// Needs to be reassessed with OneAPI?
+#if (defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER))
 #undef STK_MPI_SUPPORTS_NEIGHBOR_COMM
 #endif
 
@@ -107,14 +108,14 @@ public:
   /** Obtain the message buffer for a given processor */
   CommBufferV & send_buffer( int p )
   {
-    ThrowAssertMsg(m_size > p, "CommNeighbors::send_buffer p="<<p<<" out of range.");
+    STK_ThrowAssertMsg(m_size > p, "CommNeighbors::send_buffer p="<<p<<" out of range.");
     return m_send[p] ;
   }
 
   /** Obtain the message buffer for a given processor */
   CommBufferV & recv_buffer( int p )
   {
-    ThrowAssertMsg(m_size > p, "CommNeighbors::recv_buffer p="<<p<<" out of range.");
+    STK_ThrowAssertMsg(m_size > p, "CommNeighbors::recv_buffer p="<<p<<" out of range.");
     return m_recv[p] ;
   }
 

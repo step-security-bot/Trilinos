@@ -43,6 +43,8 @@
 // ***********************************************************************
 //
 // @HEADER
+
+// clang-format off
 #include <Teuchos_XMLParameterListCoreHelpers.hpp>
 
 #include "MueLu_Exceptions.hpp"
@@ -108,14 +110,6 @@ namespace MueLu {
       if (value == temp.str() ) { ss << "<Parameter name=\"multigrid algorithm\" type=\"string\" value=\"pg\"/>"; return ss.str(); }
     }
 
-    if (name == "repartition: enable") {
-      std::stringstream temp1; temp1 << "\"" << "1" << "\"";
-      if (value == temp1.str()) {
-        RCP<Teuchos::FancyOStream> out = Teuchos::fancyOStream(Teuchos::rcpFromRef(std::cout));
-        *out << "WARNING: repartitioning in MueLu is different to MLs. Please refer to the MueLu users Manual for more information." << std::endl;
-      }
-    }
-
     // put in auto-generated code here
 
 
@@ -133,6 +127,7 @@ namespace MueLu {
     if (name == "print unused parameters") { ss << "<Parameter name=\"print unused parameters\" type=\"bool\" value=" << value << "/>"; return ss.str(); }      
     if (name == "sa: damping factor") { ss << "<Parameter name=\"sa: damping factor\" type=\"double\" value=" << value << "/>"; return ss.str(); }      
     if (name == "sa: use filtered matrix") { ss << "<Parameter name=\"sa: use filtered matrix\" type=\"bool\" value=" << value << "/>"; return ss.str(); }      
+    if (name == "sa: eigen-analysis type") { ss << "<Parameter name=\"sa: eigen-analysis type\" type=\"string\" value=" << value << "/>"; return ss.str(); }      
     if (name == "sa: eigenvalue estimate num iterations") { ss << "<Parameter name=\"sa: eigenvalue estimate num iterations\" type=\"int\" value=" << value << "/>"; return ss.str(); }      
     if (name == "sa: use rowsumabs diagonal scaling") { ss << "<Parameter name=\"sa: use rowsumabs diagonal scaling\" type=\"bool\" value=" << value << "/>"; return ss.str(); }      
     if (name == "sa: enforce constraints") { ss << "<Parameter name=\"sa: enforce constraints\" type=\"bool\" value=" << value << "/>"; return ss.str(); }      
@@ -141,6 +136,8 @@ namespace MueLu {
     if (name == "sa: rowsumabs use automatic diagonal tolerance") { ss << "<Parameter name=\"sa: rowsumabs use automatic diagonal tolerance\" type=\"bool\" value=" << value << "/>"; return ss.str(); }      
     if (name == "sa: rowsumabs diagonal replacement value") { ss << "<Parameter name=\"sa: rowsumabs diagonal replacement value\" type=\"double\" value=" << value << "/>"; return ss.str(); }      
     if (name == "sa: rowsumabs replace single entry row with zero") { ss << "<Parameter name=\"sa: rowsumabs replace single entry row with zero\" type=\"bool\" value=" << value << "/>"; return ss.str(); }      
+    if (name == "replicate: npdes") { ss << "<Parameter name=\"replicate: npdes\" type=\"int\" value=" << value << "/>"; return ss.str(); }      
+    if (name == "combine: numBlks") { ss << "<Parameter name=\"combine: numBlks\" type=\"int\" value=" << value << "/>"; return ss.str(); }      
     if (name == "pcoarsen: element") { ss << "<Parameter name=\"pcoarsen: element\" type=\"string\" value=" << value << "/>"; return ss.str(); }      
     if (name == "pcoarsen: schedule") { ss << "<Parameter name=\"pcoarsen: schedule\" type=\"string\" value=" << value << "/>"; return ss.str(); }      
     if (name == "pcoarsen: hi basis") { ss << "<Parameter name=\"pcoarsen: hi basis\" type=\"string\" value=" << value << "/>"; return ss.str(); }      
@@ -151,11 +148,13 @@ namespace MueLu {
     if (name == "repartition: enable") { ss << "<Parameter name=\"repartition: enable\" type=\"bool\" value=" << value << "/>"; return ss.str(); }      
     if (name == "repartition: start level") { ss << "<Parameter name=\"repartition: start level\" type=\"int\" value=" << value << "/>"; return ss.str(); }      
     if (name == "repartition: use map") { ss << "<Parameter name=\"repartition: use map\" type=\"bool\" value=" << value << "/>"; return ss.str(); }      
+    if (name == "repartition: use subcommunicators in place") { ss << "<Parameter name=\"repartition: use subcommunicators in place\" type=\"bool\" value=" << value << "/>"; return ss.str(); }      
     if (name == "repartition: node repartition level") { ss << "<Parameter name=\"repartition: node repartition level\" type=\"int\" value=" << value << "/>"; return ss.str(); }      
     if (name == "repartition: node id") { ss << "<Parameter name=\"repartition: node id\" type=\"int\" value=" << value << "/>"; return ss.str(); }      
     if (name == "repartition: min rows per proc") { ss << "<Parameter name=\"repartition: min rows per proc\" type=\"int\" value=" << value << "/>"; return ss.str(); }      
     if (name == "repartition: max imbalance") { ss << "<Parameter name=\"repartition: max imbalance\" type=\"double\" value=" << value << "/>"; return ss.str(); }      
     if (name == "use external multigrid package") { ss << "<Parameter name=\"use external multigrid package\" type=\"string\" value=" << value << "/>"; return ss.str(); }      
+    if (name == "maxwell1: dump matrices") { ss << "<Parameter name=\"maxwell1: dump matrices\" type=\"bool\" value=" << value << "/>"; return ss.str(); }      
     if (name == "refmaxwell: mode") { ss << "<Parameter name=\"refmaxwell: mode\" type=\"string\" value=" << value << "/>"; return ss.str(); }      
     if (name == "refmaxwell: disable addon") { ss << "<Parameter name=\"refmaxwell: disable addon\" type=\"bool\" value=" << value << "/>"; return ss.str(); }      
     if (name == "refmaxwell: use as preconditioner") { ss << "<Parameter name=\"refmaxwell: use as preconditioner\" type=\"bool\" value=" << value << "/>"; return ss.str(); }      
@@ -205,6 +204,7 @@ namespace MueLu {
   "<Parameter name=\"aggregation: type\" type=\"string\" value=\"uncoupled\"/>"
   "<Parameter name=\"aggregation: mode\" type=\"string\" value=\"uncoupled\"/>"
   "<Parameter name=\"aggregation: ordering\" type=\"string\" value=\"natural\"/>"
+  "<Parameter name=\"aggregation: phase 1 algorithm\" type=\"string\" value=\"Distance2\"/>"
   "<Parameter name=\"aggregation: drop scheme\" type=\"string\" value=\"classical\"/>"
   "<Parameter name=\"aggregation: classical scheme\" type=\"string\" value=\"direct\"/>"
   "<Parameter name=\"aggregation: row sum drop tol\" type=\"double\" value=\"-1.0\"/>"
@@ -216,6 +216,7 @@ namespace MueLu {
   "<Parameter name=\"aggregation: distance laplacian algo\" type=\"string\" value=\"default\"/>"
   "<Parameter name=\"aggregation: classical algo\" type=\"string\" value=\"default\"/>"
   "<Parameter name=\"aggregation: drop tol\" type=\"double\" value=\"0.0\"/>"
+  "<Parameter name=\"aggregation: use ml scaling of drop tol\" type=\"bool\" value=\"false\"/>"
   "<Parameter name=\"aggregation: min agg size\" type=\"int\" value=\"2\"/>"
   "<Parameter name=\"aggregation: max agg size\" type=\"int\" value=\"-1\"/>"
   "<Parameter name=\"aggregation: compute aggregate qualities\" type=\"bool\" value=\"false\"/>"
@@ -236,7 +237,9 @@ namespace MueLu {
   "<Parameter name=\"aggregation: enable phase 2a\" type=\"bool\" value=\"true\"/>"
   "<Parameter name=\"aggregation: enable phase 2b\" type=\"bool\" value=\"true\"/>"
   "<Parameter name=\"aggregation: enable phase 3\" type=\"bool\" value=\"true\"/>"
+  "<Parameter name=\"aggregation: match ML phase1\" type=\"bool\" value=\"false\"/>"
   "<Parameter name=\"aggregation: match ML phase2a\" type=\"bool\" value=\"false\"/>"
+  "<Parameter name=\"aggregation: match ML phase2b\" type=\"bool\" value=\"false\"/>"
   "<Parameter name=\"aggregation: phase2a agg factor\" type=\"double\" value=\"0.5\"/>"
   "<Parameter name=\"aggregation: error on nodes with no on-rank neighbors\" type=\"bool\" value=\"false\"/>"
   "<Parameter name=\"aggregation: phase3 avoid singletons\" type=\"bool\" value=\"false\"/>"
@@ -271,9 +274,12 @@ namespace MueLu {
   "<Parameter name=\"aggregate qualities: percentiles\" type=\"Array(double)\" value=\"{}\"/>"
   "<Parameter name=\"aggregate qualities: mode\" type=\"string\" value=\"eigenvalue\"/>"
   "<ParameterList name=\"export data\"/>"
+  "<Parameter name=\"keep data\" type=\"string\" value=\"{}\"/>"
+  "<Parameter name=\"save data\" type=\"string\" value=\"{}\"/>"
   "<Parameter name=\"print initial parameters\" type=\"bool\" value=\"true\"/>"
   "<Parameter name=\"print unused parameters\" type=\"bool\" value=\"true\"/>"
   "<Parameter name=\"transpose: use implicit\" type=\"bool\" value=\"false\"/>"
+  "<Parameter name=\"transfers: half precision\" type=\"bool\" value=\"false\"/>"
   "<Parameter name=\"nullspace: calculate rotations\" type=\"bool\" value=\"false\"/>"
   "<Parameter name=\"nullspace: suppress dimension check\" type=\"bool\" value=\"false\"/>"
   "<Parameter name=\"restriction: scale nullspace\" type=\"bool\" value=\"false\"/>"
@@ -284,6 +290,7 @@ namespace MueLu {
   "<Parameter name=\"toggle: mode\" type=\"string\" value=\"semicoarsen\"/>"
   "<Parameter name=\"semicoarsen: coarsen rate\" type=\"int\" value=\"3\"/>"
   "<Parameter name=\"semicoarsen: piecewise constant\" type=\"bool\" value=\"false\"/>"
+  "<Parameter name=\"semicoarsen: piecewise linear\" type=\"bool\" value=\"false\"/>"
   "<Parameter name=\"semicoarsen: calculate nonsym restriction\" type=\"bool\" value=\"false\"/>"
   "<Parameter name=\"semicoarsen: number of levels\" type=\"int\" value=\"3\"/>"
   "<Parameter name=\"linedetection: orientation\" type=\"string\" value=\"vertical\"/>"
@@ -291,6 +298,7 @@ namespace MueLu {
   "<Parameter name=\"sa: damping factor\" type=\"double\" value=\"1.33\"/>"
   "<Parameter name=\"sa: use filtered matrix\" type=\"bool\" value=\"true\"/>"
   "<Parameter name=\"sa: calculate eigenvalue estimate\" type=\"bool\" value=\"false\"/>"
+  "<Parameter name=\"sa: eigen-analysis type\" type=\"string\" value=\"power-method\"/>"
   "<Parameter name=\"sa: eigenvalue estimate num iterations\" type=\"int\" value=\"10\"/>"
   "<Parameter name=\"sa: use rowsumabs diagonal scaling\" type=\"bool\" value=\"false\"/>"
   "<Parameter name=\"sa: enforce constraints\" type=\"bool\" value=\"false\"/>"
@@ -299,6 +307,8 @@ namespace MueLu {
   "<Parameter name=\"sa: rowsumabs use automatic diagonal tolerance\" type=\"bool\" value=\"false\"/>"
   "<Parameter name=\"sa: rowsumabs diagonal replacement value\" type=\"double\" value=\"0.0\"/>"
   "<Parameter name=\"sa: rowsumabs replace single entry row with zero\" type=\"bool\" value=\"true\"/>"
+  "<Parameter name=\"replicate: npdes\" type=\"int\" value=\"1\"/>"
+  "<Parameter name=\"combine: numBlks\" type=\"int\" value=\"1\"/>"
   "<Parameter name=\"interp: build coarse coordinates\" type=\"bool\" value=\"true\"/>"
   "<ParameterList name=\"transfer: params\"/>"
   "<Parameter name=\"pcoarsen: element\" type=\"string\" value=\"\"/>"
@@ -328,6 +338,7 @@ namespace MueLu {
   "<ParameterList name=\"repartition: params\"/>"
   "<Parameter name=\"repartition: start level\" type=\"int\" value=\"2\"/>"
   "<Parameter name=\"repartition: use map\" type=\"bool\" value=\"false\"/>"
+  "<Parameter name=\"repartition: use subcommunicators in place\" type=\"bool\" value=\"false\"/>"
   "<Parameter name=\"repartition: node repartition level\" type=\"int\" value=\"-1\"/>"
   "<Parameter name=\"repartition: node id\" type=\"int\" value=\"-1\"/>"
   "<Parameter name=\"repartition: min rows per proc\" type=\"int\" value=\"800\"/>"
@@ -340,6 +351,7 @@ namespace MueLu {
   "<Parameter name=\"repartition: remap accept partition\" type=\"bool\" value=\"true\"/>"
   "<Parameter name=\"repartition: print partition distribution\" type=\"bool\" value=\"false\"/>"
   "<Parameter name=\"repartition: rebalance P and R\" type=\"bool\" value=\"false\"/>"
+  "<Parameter name=\"repartition: explicit via new copy rebalance P and R\" type=\"bool\" value=\"false\"/>"
   "<Parameter name=\"repartition: rebalance Nullspace\" type=\"bool\" value=\"true\"/>"
   "<Parameter name=\"repartition: use subcommunicators\" type=\"bool\" value=\"true\"/>"
   "<Parameter name=\"rap: relative diagonal floor\" type=\"Array(double)\" value=\"{}\"/>"
@@ -362,6 +374,8 @@ namespace MueLu {
   "<Parameter name=\"maxwell1: mode\" type=\"string\" value=\"standard\"/>"
   "<ParameterList name=\"maxwell1: 11list\"/>"
   "<ParameterList name=\"maxwell1: 22list\"/>"
+  "<Parameter name=\"maxwell1: dump matrices\" type=\"bool\" value=\"false\"/>"
+  "<Parameter name=\"maxwell1: nodal smoother fix zero diagonal threshold\" type=\"double\" value=\"1e-10\"/>"
   "<Parameter name=\"refmaxwell: mode\" type=\"string\" value=\"additive\"/>"
   "<Parameter name=\"refmaxwell: disable addon\" type=\"bool\" value=\"true\"/>"
   "<ParameterList name=\"refmaxwell: 11list\"/>"
@@ -622,6 +636,8 @@ namespace MueLu {
       
          ("aggregation: ordering","aggregation: ordering")
       
+         ("aggregation: phase 1 algorithm","aggregation: phase 1 algorithm")
+      
          ("aggregation: drop scheme","aggregation: drop scheme")
       
          ("aggregation: classical scheme","aggregation: classical scheme")
@@ -643,6 +659,8 @@ namespace MueLu {
          ("aggregation: classical algo","aggregation: classical algo")
       
          ("aggregation: threshold","aggregation: drop tol")
+      
+         ("aggregation: use ml scaling of drop tol","aggregation: use ml scaling of drop tol")
       
          ("aggregation: min agg size","aggregation: min agg size")
       
@@ -684,7 +702,11 @@ namespace MueLu {
       
          ("aggregation: enable phase 3","aggregation: enable phase 3")
       
+         ("aggregation: match ML phase1","aggregation: match ML phase1")
+      
          ("aggregation: match ML phase2a","aggregation: match ML phase2a")
+      
+         ("aggregation: match ML phase2b","aggregation: match ML phase2b")
       
          ("aggregation: phase2a agg factor","aggregation: phase2a agg factor")
       
@@ -754,11 +776,17 @@ namespace MueLu {
       
          ("export data","export data")
       
+         ("keep data","keep data")
+      
+         ("save data","save data")
+      
          ("ML print initial list","print initial parameters")
       
          ("print unused","print unused parameters")
       
          ("transpose: use implicit","transpose: use implicit")
+      
+         ("transfers: half precision","transfers: half precision")
       
          ("nullspace: calculate rotations","nullspace: calculate rotations")
       
@@ -780,6 +808,8 @@ namespace MueLu {
       
          ("semicoarsen: piecewise constant","semicoarsen: piecewise constant")
       
+         ("semicoarsen: piecewise linear","semicoarsen: piecewise linear")
+      
          ("semicoarsen: calculate nonsym restriction","semicoarsen: calculate nonsym restriction")
       
          ("semicoarsen: number of levels","semicoarsen: number of levels")
@@ -793,6 +823,8 @@ namespace MueLu {
          ("aggregation aux: enable","sa: use filtered matrix")
       
          ("sa: calculate eigenvalue estimate","sa: calculate eigenvalue estimate")
+      
+         ("sa: eigen-analysis type","sa: eigen-analysis type")
       
          ("eigen-analysis: iterations","sa: eigenvalue estimate num iterations")
       
@@ -809,6 +841,10 @@ namespace MueLu {
          ("not supported by ML","sa: rowsumabs diagonal replacement value")
       
          ("not supported by ML","sa: rowsumabs replace single entry row with zero")
+      
+         ("not supported by ML","replicate: npdes")
+      
+         ("not supported by ML","combine: numBlks")
       
          ("interp: build coarse coordinates","interp: build coarse coordinates")
       
@@ -868,6 +904,8 @@ namespace MueLu {
       
          ("repartition: use map","repartition: use map")
       
+         ("repartition: use subcommunicators in place","repartition: use subcommunicators in place")
+      
          ("repartition: node repartition level","repartition: node repartition level")
       
          ("repartition: node id","repartition: node id")
@@ -891,6 +929,8 @@ namespace MueLu {
          ("repartition: print partition distribution","repartition: print partition distribution")
       
          ("repartition: rebalance P and R","repartition: rebalance P and R")
+      
+         ("repartition: explicit via new copy rebalance P and R","repartition: explicit via new copy rebalance P and R")
       
          ("repartition: rebalance Nullspace","repartition: rebalance Nullspace")
       
@@ -935,6 +975,10 @@ namespace MueLu {
          ("maxwell1: 11list","maxwell1: 11list")
       
          ("maxwell1: 22list","maxwell1: 22list")
+      
+         ("maxwell1: dump matrices","maxwell1: dump matrices")
+      
+         ("maxwell1: nodal smoother fix zero diagonal threshold","maxwell1: nodal smoother fix zero diagonal threshold")
       
          ("refmaxwell: mode","refmaxwell: mode")
       

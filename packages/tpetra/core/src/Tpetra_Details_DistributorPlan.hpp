@@ -37,6 +37,18 @@
 // ************************************************************************
 // @HEADER
 
+/*! \file 
+
+   How we communicate (Send, ISend).
+   How / whether a Distributor is initialized.
+   Data structures tracking where (ranks) messages go and come from.
+
+   Lengths are not in terms of bytes, but some kind of abstract object.
+
+   Reverse plan: if X -> Y, then Y -> X in the reverse plan, e.g. in a halo exchange, we both want to receive ghost elements and send our own.
+
+*/
+
 #ifndef TPETRA_DETAILS_DISTRIBUTOR_PLAN_HPP
 #define TPETRA_DETAILS_DISTRIBUTOR_PLAN_HPP
 
@@ -46,15 +58,12 @@
 #include "Teuchos_RCP.hpp"
 #include "TpetraCore_config.h"
 
+#if defined(HAVE_TPETRACORE_MPI_ADVANCE)
+#include <mpi_advance.h>
+#endif
+
 namespace Tpetra {
 namespace Details {
-
-namespace {
-#ifdef TPETRA_ENABLE_DEPRECATED_CODE
-  const bool barrierBetween_default = false;
-#endif
-  const bool useDistinctTags_default = true;
-}
 
 /// \brief The type of MPI send that Distributor should use.
 ///
@@ -62,12 +71,12 @@ namespace {
 /// not rely on these values in your code.
 enum EDistributorSendType {
   DISTRIBUTOR_ISEND, // Use MPI_Isend (Teuchos::isend)
-#ifdef TPETRA_ENABLE_DEPRECATED_CODE
-  DISTRIBUTOR_RSEND, // Use MPI_Rsend (Teuchos::readySend)
-#endif
-  DISTRIBUTOR_SEND   // Use MPI_Send (Teuchos::send)
-#ifdef TPETRA_ENABLE_DEPRECATED_CODE
-  , DISTRIBUTOR_SSEND  // Use MPI_Ssend (Teuchos::ssend)
+  DISTRIBUTOR_SEND,  // Use MPI_Send (Teuchos::send)
+  DISTRIBUTOR_ALLTOALL // Use MPI_Alltoall
+#if defined(HAVE_TPETRACORE_MPI_ADVANCE)
+  ,
+  DISTRIBUTOR_MPIADVANCE_ALLTOALL,
+  DISTRIBUTOR_MPIADVANCE_NBRALLTOALLV
 #endif
 };
 
@@ -98,38 +107,22 @@ enum EDistributorHowInitialized {
 std::string
 DistributorHowInitializedEnumToString (EDistributorHowInitialized how);
 
-/// Instances of Distributor take the following parameters that
+/// Instances of DistributorPlan take the following parameters that
 /// control communication and debug output:
-#ifdef TPETRA_ENABLE_DEPRECATED_CODE
-/// - "Barrier between receives and sends" (<tt>bool</tt>): (DEPRECATED)
-///   Whether to execute a barrier between receives and sends in
-///   do[Reverse]Posts().  
-///   A barrier is required for correctness
-///   when the "Send type" parameter is "Rsend".  Otherwise,
-///   A barrier is correct and may be useful for debugging, but not
-///   recommended, since it introduces useless synchronization.
-#endif
 /// - "Send type" (<tt>std::string</tt>): When using MPI, the
 ///   variant of MPI_Send to use in do[Reverse]Posts().  Valid
 ///   values include "Isend",
-#ifdef TPETRA_ENABLE_DEPRECATED_CODE
-///   "Rsend (DEPRECATED)", "Ssend (DEPRECATED)",
-#endif
 ///    and "Send".  The
 ///   default is "Send".  (The receive type is always MPI_Irecv, a
 ///   nonblocking receive.  Since we post receives first before
 ///   sends, this prevents deadlock, even if MPI_Send blocks and
 ///   does not buffer.)
 class DistributorPlan : public Teuchos::ParameterListAcceptorDefaultBase {
+  static constexpr int DEFAULT_MPI_TAG = 0;
+
 public:
   DistributorPlan(Teuchos::RCP<const Teuchos::Comm<int>> comm);
   DistributorPlan(const DistributorPlan& otherPlan);
-
-  //! Get the tag to use for receives and sends.
-  ///
-  /// See useDistinctTags_.  This is called in doPosts() (both
-  /// variants) and computeReceives().
-  int getTag(const int pathTag) const;
 
   size_t createFromSends(const Teuchos::ArrayView<const int>& exportProcIDs);
   void createFromRecvs(const Teuchos::ArrayView<const int>& remoteProcIDs);
@@ -141,11 +134,10 @@ public:
   Teuchos::RCP<DistributorPlan> getReversePlan() const;
 
   Teuchos::RCP<const Teuchos::Comm<int>> getComm() const { return comm_; }
-  EDistributorSendType getSendType() const { return sendType_; }
-#ifdef TPETRA_ENABLE_DEPRECATED_CODE
-  bool barrierBetweenRecvSend() const { return barrierBetweenRecvSend_; }
+#if defined(HAVE_TPETRACORE_MPI_ADVANCE)
+  Teuchos::RCP<MPIX_Comm*> getMPIXComm() const { return mpixComm_; }
 #endif
-  bool useDistinctTags() const { return useDistinctTags_; }
+  EDistributorSendType getSendType() const { return sendType_; }
   size_t getNumReceives() const { return numReceives_; }
   size_t getNumSends() const { return numSendsToOtherProcs_; }
   bool hasSelfMessage() const { return sendMessageToSelf_; }
@@ -160,6 +152,12 @@ public:
   Details::EDistributorHowInitialized howInitialized() const { return howInitialized_; }
 
 private:
+
+  // after the plan has been created we have the info we need to initialize the MPI advance communicator
+#if defined(HAVE_TPETRACORE_MPI_ADVANCE)
+  void initializeMpiAdvance();
+#endif
+
   Teuchos::RCP<const Teuchos::ParameterList> getValidParameters() const;
 
   void createReversePlan() const;
@@ -177,28 +175,16 @@ private:
   void computeReceives();
 
   Teuchos::RCP<const Teuchos::Comm<int>> comm_;
+#if defined(HAVE_TPETRACORE_MPI_ADVANCE)
+  Teuchos::RCP<MPIX_Comm*> mpixComm_;
+#endif
+
   Details::EDistributorHowInitialized howInitialized_;
   mutable Teuchos::RCP<DistributorPlan> reversePlan_;
 
   //! @name Parameters read in from the Teuchos::ParameterList
   //@{
   EDistributorSendType sendType_;
-#ifdef TPETRA_ENABLE_DEPRECATED_CODE
-  bool barrierBetweenRecvSend_;
-#endif
-
-  /// \brief Whether to use different tags for different code paths.
-  ///
-  /// There are currently three code paths in Distributor that post
-  /// receives and sends:
-  ///
-  /// 1. Three-argument variant of doPosts()
-  /// 2. Four-argument variant of doPosts()
-  /// 3. computeReceives()
-  ///
-  /// If this option is true, Distributor will use a distinct
-  /// message tag for each of these paths.
-  bool useDistinctTags_;
   //@}
 
   bool sendMessageToSelf_;

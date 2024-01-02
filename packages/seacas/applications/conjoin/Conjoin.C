@@ -1,4 +1,4 @@
-// Copyright(C) 1999-2021 National Technology & Engineering Solutions
+// Copyright(C) 1999-2023 National Technology & Engineering Solutions
 // of Sandia, LLC (NTESS).  Under the terms of Contract DE-NA0003525 with
 // NTESS, the U.S. Government retains certain rights in this software.
 //
@@ -44,6 +44,14 @@
 #error "Requires exodusII version 4.68 or later"
 #endif
 
+#include "CJ_ExodusEntity.h"
+#include "CJ_ExodusFile.h"
+#include "CJ_Internals.h"
+#include "CJ_ObjectType.h"
+#include "CJ_SystemInterface.h"
+#include "CJ_Variables.h"
+#include "CJ_Version.h"
+
 namespace {
   template <typename T> void clear(std::vector<T> &vec)
   {
@@ -68,7 +76,9 @@ struct NodeInfo
   NodeInfo() = default;
   NodeInfo(size_t id_, double x_, double y_, double z_) : id(id_), x(x_), y(y_), z(z_) {}
   size_t id{0};
-  double x{0.0}, y{0.0}, z{0.0};
+  double x{0.0};
+  double y{0.0};
+  double z{0.0};
 
   bool operator==(const NodeInfo &other) const
   {
@@ -110,14 +120,6 @@ struct NodeInfo
 
 using GlobalMap = std::vector<NodeInfo>;
 using GMapIter  = GlobalMap::iterator;
-
-#include "CJ_ExodusEntity.h"
-#include "CJ_ExodusFile.h"
-#include "CJ_Internals.h"
-#include "CJ_ObjectType.h"
-#include "CJ_SystemInterface.h"
-#include "CJ_Variables.h"
-#include "CJ_Version.h"
 
 extern double seacas_timer();
 
@@ -396,7 +398,7 @@ int          main(int argc, char *argv[])
 
     time_t end_time = time(nullptr);
     add_to_log(argv[0], end_time - begin_time);
-    return (error);
+    return error;
   }
   catch (std::exception &e) {
     fmt::print(stderr, "ERROR: Standard exception: {}\n", e.what());
@@ -408,10 +410,10 @@ int conjoin(Excn::SystemInterface &interFace, T /* dummy */, INT /* dummy int */
 {
   SMART_ASSERT(sizeof(T) == Excn::ExodusFile::io_word_size());
 
-  const double alive      = interFace.alive_value();
-  size_t       part_count = interFace.inputFiles_.size();
+  const T alive      = interFace.alive_value();
+  size_t  part_count = interFace.inputFiles_.size();
 
-  auto mytitle = new char[MAX_LINE_LENGTH + 1];
+  auto *mytitle = new char[MAX_LINE_LENGTH + 1];
   memset(mytitle, '\0', MAX_LINE_LENGTH + 1);
 
   Excn::Mesh<INT> global;
@@ -910,11 +912,11 @@ int conjoin(Excn::SystemInterface &interFace, T /* dummy */, INT /* dummy int */
       fmt::print("{}", time_stamp(tsFormat));
     }
 
-    fmt::print(
-        "Step {:{}L}/{:L},  time {:.4e}  (Part {:{}}/{},  step {:{}L})   Active Elem: {:{}L}",
-        time_step + 1, step_width, num_time_steps, time_val, p + 1, part_width, part_count,
-        global_times[time_step].localStepNumber + 1, loc_step_width,
-        local_mesh[p].count(Excn::ObjectType::ELEM), element_width);
+    fmt::print("Step {:{}}/{},  time {:.4e}  (Part {:{}}/{},  step {:{}})   Active Elem: {:{}}",
+               fmt::group_digits(time_step + 1), step_width, fmt::group_digits(num_time_steps),
+               time_val, p + 1, part_width, part_count,
+               fmt::group_digits(global_times[time_step].localStepNumber + 1), loc_step_width,
+               fmt::group_digits(local_mesh[p].count(Excn::ObjectType::ELEM)), element_width);
 
     double cur_time        = seacas_timer();
     double elapsed         = cur_time - start_time;
@@ -936,7 +938,7 @@ int conjoin(Excn::SystemInterface &interFace, T /* dummy */, INT /* dummy int */
     fmt::print("{}", time_stamp(tsFormat));
   }
   fmt::print("******* END *******\n");
-  return (error);
+  return error;
 }
 
 namespace {
@@ -1198,7 +1200,7 @@ namespace {
           blocks[p][b].nodesPerElement = block_param.num_nodes_per_entry;
           blocks[p][b].attributeCount  = block_param.num_attribute;
           blocks[p][b].offset_         = block_param.num_entry;
-          copy_string(blocks[p][b].elType, block_param.topology);
+          blocks[p][b].elType          = block_param.topology;
 
           // NOTE: This is not correct, but fixed below.
           glob_blocks[b].elementCount += block_param.num_entry;
@@ -1212,7 +1214,7 @@ namespace {
           }
 
           glob_blocks[b].position_ = b;
-          copy_string(glob_blocks[b].elType, block_param.topology);
+          glob_blocks[b].elType    = block_param.topology;
         }
 
         if (block_param.num_attribute > 0 && glob_blocks[b].attributeNames.empty()) {
@@ -1252,11 +1254,11 @@ namespace {
         blocks[p][b].offset_ = local_order_entity_count[local_order];
 
         if (debug_level & 4) {
-          fmt::print("\tBlock {}, Id = {}, Name = '{}', Elements = {:12L}, Nodes/element = {}, "
+          fmt::print("\tBlock {}, Id = {}, Name = '{}', Elements = {:12}, Nodes/element = {}, "
                      "Attributes = {}, Position = {}, Offset = {}\n",
-                     b, glob_blocks[b].id, blocks[p][b].name_, blocks[p][b].entity_count(),
-                     blocks[p][b].nodesPerElement, blocks[p][b].attributeCount,
-                     blocks[p][b].position_, blocks[p][b].offset_);
+                     b, glob_blocks[b].id, blocks[p][b].name_,
+                     fmt::group_digits(blocks[p][b].entity_count()), blocks[p][b].nodesPerElement,
+                     blocks[p][b].attributeCount, blocks[p][b].position_, blocks[p][b].offset_);
         }
       }
     }
@@ -1279,10 +1281,11 @@ namespace {
 
       if (debug_level & 4) {
         fmt::print("\nOutput element block info for...\n"
-                   "Block {}, Id = {}, Name = '{}', Elements = {:12L}, Nodes/element = {}, "
+                   "Block {}, Id = {}, Name = '{}', Elements = {:12}, Nodes/element = {}, "
                    "Attributes = {}\n",
-                   b, glob_blocks[b].id, glob_blocks[b].name_, glob_blocks[b].entity_count(),
-                   glob_blocks[b].nodesPerElement, glob_blocks[b].attributeCount);
+                   b, glob_blocks[b].id, glob_blocks[b].name_,
+                   fmt::group_digits(glob_blocks[b].entity_count()), glob_blocks[b].nodesPerElement,
+                   glob_blocks[b].attributeCount);
       }
 
       if (debug_level & 4) {
@@ -1973,7 +1976,7 @@ namespace {
       // element blocks...
       std::string var_name;
       int         var_count = 0;
-      for (auto &elem : variable_list) {
+      for (const auto &elem : variable_list) {
         if (var_name == elem.first) {
           continue;
         }
@@ -2011,12 +2014,18 @@ namespace {
   {
     // Write out Mesh info
     fmt::print(" Title: {}\n\n", mesh.title);
-    fmt::print(" Number of coordinates per node ={:14L}\n", mesh.count(Excn::ObjectType::DIM));
-    fmt::print(" Number of nodes                ={:14L}\n", mesh.count(Excn::ObjectType::NODE));
-    fmt::print(" Number of elements             ={:14L}\n", mesh.count(Excn::ObjectType::ELEM));
-    fmt::print(" Number of element blocks       ={:14L}\n", mesh.count(Excn::ObjectType::EBLK));
-    fmt::print(" Number of nodal point sets     ={:14L}\n", mesh.count(Excn::ObjectType::NSET));
-    fmt::print(" Number of element side sets    ={:14L}\n", mesh.count(Excn::ObjectType::SSET));
+    fmt::print(" Number of coordinates per node ={:14}\n",
+               fmt::group_digits(mesh.count(Excn::ObjectType::DIM)));
+    fmt::print(" Number of nodes                ={:14}\n",
+               fmt::group_digits(mesh.count(Excn::ObjectType::NODE)));
+    fmt::print(" Number of elements             ={:14}\n",
+               fmt::group_digits(mesh.count(Excn::ObjectType::ELEM)));
+    fmt::print(" Number of element blocks       ={:14}\n",
+               fmt::group_digits(mesh.count(Excn::ObjectType::EBLK)));
+    fmt::print(" Number of nodal point sets     ={:14}\n",
+               fmt::group_digits(mesh.count(Excn::ObjectType::NSET)));
+    fmt::print(" Number of element side sets    ={:14}\n",
+               fmt::group_digits(mesh.count(Excn::ObjectType::SSET)));
   }
 
   template <typename INT>
@@ -2560,10 +2569,10 @@ namespace {
 
     std::string var_name;
     int         out_position = -1;
-    for (auto &variable_name : variable_names) {
-      if (variable_name.second > 0) {
-        if (var_name != variable_name.first) {
-          var_name = variable_name.first;
+    for (auto [v_name, v_blkid] : variable_names) {
+      if (v_blkid > 0) {
+        if (var_name != v_name) {
+          var_name = v_name;
           // Find which exodus variable matches this name
           out_position = -1;
           for (size_t j = 0; j < exo_names.size(); j++) {
@@ -2575,7 +2584,7 @@ namespace {
           if (out_position < 0) {
             fmt::print(stderr,
                        "ERROR: Variable '{}' does not exist on any block in this database.\n",
-                       variable_name.first);
+                       v_name);
             exit(EXIT_FAILURE);
           }
 
@@ -2585,10 +2594,10 @@ namespace {
           // variable truly exists for the block that the user specified.
           found_it = false;
           for (size_t b = 0; b < global.count(vars.objectType); b++) {
-            if (glob_blocks[b].id == variable_name.second) {
+            if (glob_blocks[b].id == v_blkid) {
               if (glob_blocks[b].truthTable[out_position] == 0) {
-                fmt::print(stderr, "ERROR: Variable '{}' does not exist on block {}.\n",
-                           variable_name.first, variable_name.second);
+                fmt::print(stderr, "ERROR: Variable '{}' does not exist on block {}.\n", v_name,
+                           v_blkid);
                 exit(EXIT_FAILURE);
               }
               else {
@@ -2605,7 +2614,7 @@ namespace {
           if (!found_it) {
             fmt::print(stderr,
                        "ERROR: User-specified block id of {} for variable '{}' does not exist.\n",
-                       variable_name.second, variable_name.first);
+                       v_blkid, v_name);
             exit(EXIT_FAILURE);
           }
         }
@@ -2692,7 +2701,7 @@ namespace {
     const char *c2 = s2.c_str();
     for (;;) {
       if (::toupper(*c1) != ::toupper(*c2)) {
-        return (::toupper(*c1) - ::toupper(*c2));
+        return ::toupper(*c1) - ::toupper(*c2);
       }
       if (*c1 == '\0') {
         return 0;
@@ -2715,7 +2724,7 @@ namespace {
   inline bool is_whitespace(char c)
   {
     static char white_space[] = {' ', '\t', '\n', '\r', ',', '\0'};
-    return (std::strchr(white_space, c) != nullptr);
+    return std::strchr(white_space, c) != nullptr;
   }
 
   void compress_white_space(char *str)

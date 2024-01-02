@@ -46,10 +46,8 @@
 #ifndef MUELU_UNCOUPLEDAGGREGATIONFACTORY_DECL_HPP_
 #define MUELU_UNCOUPLEDAGGREGATIONFACTORY_DECL_HPP_
 
-
 #include <Xpetra_Map_fwd.hpp>
 #include <Xpetra_Vector_fwd.hpp>
-#include <Xpetra_VectorFactory_fwd.hpp>
 
 #include "MueLu_ConfigDefs.hpp"
 #include "MueLu_SingleLevelFactoryBase.hpp"
@@ -67,9 +65,8 @@
 #include "MueLu_AggregationPhase3Algorithm_fwd.hpp"
 
 #include "MueLu_Level_fwd.hpp"
-#include "MueLu_AmalgamationInfo_fwd.hpp"
 //#include "MueLu_Graph_fwd.hpp"
-#include "MueLu_GraphBase.hpp"
+#include "MueLu_GraphBase_fwd.hpp"
 #include "MueLu_Aggregates_fwd.hpp"
 #include "MueLu_Exceptions.hpp"
 
@@ -139,14 +136,14 @@ namespace MueLu {
     | Aggregates   | UncoupledAggregationFactory   | Container class with aggregation information. See also Aggregates.
 */
 
-template<class LocalOrdinal = DefaultLocalOrdinal,
-         class GlobalOrdinal = DefaultGlobalOrdinal,
-         class Node = DefaultNode>
+template <class LocalOrdinal  = DefaultLocalOrdinal,
+          class GlobalOrdinal = DefaultGlobalOrdinal,
+          class Node          = DefaultNode>
 class UncoupledAggregationFactory : public SingleLevelFactoryBase {
 #undef MUELU_UNCOUPLEDAGGREGATIONFACTORY_SHORT
 #include "MueLu_UseShortNamesOrdinal.hpp"
 
-public:
+ public:
   //! @name Constructors/Destructors.
   //@{
 
@@ -154,7 +151,7 @@ public:
   UncoupledAggregationFactory();
 
   //! Destructor.
-  virtual ~UncoupledAggregationFactory() { }
+  virtual ~UncoupledAggregationFactory() {}
 
   RCP<const ParameterList> GetValidParameterList() const;
 
@@ -171,16 +168,16 @@ public:
   }
   // deprecated
   void SetMaxNeighAlreadySelected(int maxNeighAlreadySelected) {
-    SetParameter("aggregation: max selected neighbors", ParameterEntry(Teuchos::as<LocalOrdinal>(maxNeighAlreadySelected))); // revalidate
+    SetParameter("aggregation: max selected neighbors", ParameterEntry(Teuchos::as<LocalOrdinal>(maxNeighAlreadySelected)));  // revalidate
   }
   // deprecated
   void SetMinNodesPerAggregate(int minNodesPerAggregate) {
-    SetParameter("aggregation: min agg size", ParameterEntry(Teuchos::as<LocalOrdinal>(minNodesPerAggregate))); // revalidate
+    SetParameter("aggregation: min agg size", ParameterEntry(Teuchos::as<LocalOrdinal>(minNodesPerAggregate)));  // revalidate
   }
   // set information about 1-node aggregates (map name and generating factory)
   void SetOnePtMapName(const std::string name, Teuchos::RCP<const FactoryBase> mapFact) {
-    SetParameter("OnePt aggregate map name", ParameterEntry(std::string(name))); // revalidate
-    SetFactory("OnePt aggregate map factory",mapFact);
+    SetParameter("OnePt aggregate map name", ParameterEntry(std::string(name)));  // revalidate
+    SetFactory("OnePt aggregate map factory", mapFact);
   }
 
   // deprecated
@@ -204,7 +201,7 @@ public:
   //! Input
   //@{
 
-  void DeclareInput(Level &currentLevel) const;
+  void DeclareInput(Level& currentLevel) const;
 
   //@}
 
@@ -212,7 +209,7 @@ public:
   //@{
 
   /*! @brief Build aggregates. */
-  void Build(Level &currentLevel) const;
+  void Build(Level& currentLevel) const;
 
   //@}
 
@@ -220,14 +217,13 @@ public:
   //@{
 
   /*! @brief Append a new aggregation algorithm to list of aggregation algorithms */
-  //void Append(const RCP<MueLu::AggregationAlgorithmBase<LocalOrdinal, GlobalOrdinal, Node> > & alg);
+  // void Append(const RCP<MueLu::AggregationAlgorithmBase<LocalOrdinal, GlobalOrdinal, Node> > & alg);
 
   /*! @brief Remove all aggregation algorithms from list */
-  //void ClearAggregationAlgorithms() { algos_.clear(); }
+  // void ClearAggregationAlgorithms() { algos_.clear(); }
   //@}
 
-private:
-
+ private:
   //! aggregation algorithms
   // will be filled in Build routine
   mutable std::vector<RCP<MueLu::AggregationAlgorithmBase<LocalOrdinal, GlobalOrdinal, Node> > > algos_;
@@ -237,9 +233,9 @@ private:
   //! if false, no change in aggregation algorithms is possible any more
   mutable bool bDefinitionPhase_;
 
-}; // class UncoupledAggregationFactory
+};  // class UncoupledAggregationFactory
 
-}
+}  // namespace MueLu
 
 #define MUELU_UNCOUPLEDAGGREGATIONFACTORY_SHORT
 #endif /* MUELU_UNCOUPLEDAGGREGATIONFACTORY_DECL_HPP_ */

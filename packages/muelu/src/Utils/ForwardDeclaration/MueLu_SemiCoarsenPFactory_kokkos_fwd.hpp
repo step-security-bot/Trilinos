@@ -46,17 +46,13 @@
 #ifndef MUELU_SEMICOARSENPFACTORY_KOKKOS_FWD_HPP
 #define MUELU_SEMICOARSENPFACTORY_KOKKOS_FWD_HPP
 
-#include "MueLu_ConfigDefs.hpp"
-#if defined(HAVE_MUELU_KOKKOS_REFACTOR)
-
 namespace MueLu {
-  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
-  class SemiCoarsenPFactory_kokkos;
+template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+class SemiCoarsenPFactory_kokkos;
 }
 
 #ifndef MUELU_SEMICOARSENPFACTORY_KOKKOS_SHORT
 #define MUELU_SEMICOARSENPFACTORY_KOKKOS_SHORT
 #endif
 
-#endif // HAVE_MUELU_KOKKOS_REFACTOR
-#endif // MUELU_SEMICOARSENPFACTORY_KOKKOS_FWD_HPP
+#endif  // MUELU_SEMICOARSENPFACTORY_KOKKOS_FWD_HPP

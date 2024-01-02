@@ -120,11 +120,11 @@ public:
     const LO lclNumRows = static_cast<LO> (diag.getLocalLength ());
     {
       const LO matLclNumRows =
-        static_cast<LO> (lclRowMap_.getNodeNumElements ());
+        static_cast<LO> (lclRowMap_.getLocalNumElements ());
       TEUCHOS_TEST_FOR_EXCEPTION
         (lclNumRows != matLclNumRows, std::invalid_argument,
          "diag.getLocalLength() = " << lclNumRows << " != "
-         "A.getRowMap()->getNodeNumElements() = " << matLclNumRows << ".");
+         "A.getRowMap()->getLocalNumElements() = " << matLclNumRows << ".");
     }
 
     // Side effects start below this point.
@@ -143,7 +143,7 @@ public:
   void operator () (const LO& lclRowInd, LO& errCount) const {
     using KokkosSparse::findRelOffset;
 
-    D_lcl_1d_(lclRowInd) = Kokkos::Details::ArithTraits<IST>::zero ();
+    D_lcl_1d_(lclRowInd) = Kokkos::ArithTraits<IST>::zero ();
     const GO gblInd = lclRowMap_.getGlobalElement (lclRowInd);
     const LO lclColInd = lclColMap_.getLocalElement (gblInd);
 

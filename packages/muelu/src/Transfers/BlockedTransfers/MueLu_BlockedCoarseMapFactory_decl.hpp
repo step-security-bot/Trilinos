@@ -46,7 +46,6 @@
 
 #ifndef MUELU_BLOCKEDCOARSEMAPFACTORY_DECL_HPP_
 #define MUELU_BLOCKEDCOARSEMAPFACTORY_DECL_HPP_
-#include "Xpetra_StridedMapFactory_fwd.hpp"
 
 #include "MueLu_ConfigDefs.hpp"
 #include "MueLu_CoarseMapFactory.hpp"
@@ -90,16 +89,15 @@ namespace MueLu {
   | CoarseMap | BlockedCoarseMapFactory | Map containing the coarse map used as domain map in the tentative prolongation operator
 */
 
-template <class Scalar = DefaultScalar,
-          class LocalOrdinal = DefaultLocalOrdinal,
+template <class Scalar        = DefaultScalar,
+          class LocalOrdinal  = DefaultLocalOrdinal,
           class GlobalOrdinal = DefaultGlobalOrdinal,
-          class Node = DefaultNode>
-class BlockedCoarseMapFactory : public MueLu::CoarseMapFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> { //SingleLevelFactoryBase {
+          class Node          = DefaultNode>
+class BlockedCoarseMapFactory : public MueLu::CoarseMapFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> {  // SingleLevelFactoryBase {
 #undef MUELU_BLOCKEDCOARSEMAPFACTORY_SHORT
 #include "MueLu_UseShortNames.hpp"
 
-public:
-
+ public:
   //! @name Input
   //@{
 
@@ -122,14 +120,13 @@ public:
 
   //@}
 
-protected:
-
+ protected:
   //! Compute domain GID offset from another CoarseMap
-  virtual GlobalOrdinal GetDomainGIDOffset(Level& currentLevel) const final;
+  virtual GlobalOrdinal GetDomainGIDOffset(Level &currentLevel) const final;
 
-}; //class BlockedCoarseMapFactory
+};  // class BlockedCoarseMapFactory
 
-} //namespace MueLu
+}  // namespace MueLu
 
 #define MUELU_BLOCKEDCOARSEMAPFACTORY_SHORT
 #endif /* MUELU_BLOCKEDCOARSEMAPFACTORY_DECL_HPP_ */

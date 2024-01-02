@@ -47,167 +47,120 @@
 #define MUELU_LWGRAPH_KOKKOS_DECL_HPP
 
 #include "MueLu_ConfigDefs.hpp"
-#ifdef HAVE_MUELU_KOKKOS_REFACTOR
 
 #include <Kokkos_StaticCrsGraph.hpp>
-#include <KokkosCompat_ClassicNodeAPI_Wrapper.hpp>
+#include <Tpetra_KokkosCompat_ClassicNodeAPI_Wrapper.hpp>
 
-#include <Xpetra_ConfigDefs.hpp>   // global_size_t
-#include <Xpetra_Map.hpp>
+#include <Xpetra_ConfigDefs.hpp>  // global_size_t
+#include <Xpetra_Map_fwd.hpp>
 
 #include "MueLu_VerbosityLevel.hpp"
 #include "MueLu_LWGraph_kokkos_fwd.hpp"
+#include <MueLu_LocalLWGraph_kokkos_decl.hpp>
 
 #include "MueLu_Exceptions.hpp"
 
 namespace MueLu {
 
-  /*!
-    @class LWGraph_kokkos
-    @brief Lightweight MueLu representation of a compressed row storage graph
+/*!
+  @class LWGraph_kokkos
+  @brief Lightweight MueLu representation of a compressed row storage graph
 
-    This class is lightweight in the sense that it holds to local graph
-    information. These were built without using fillComplete.
-   */
-  template<class LocalOrdinal, class GlobalOrdinal, class Node>
-  class LWGraph_kokkos;
+  This class is lightweight in the sense that it holds to local graph
+  information. These were built without using fillComplete.
+ */
+template <class LocalOrdinal, class GlobalOrdinal, class Node>
+class LWGraph_kokkos {
+ public:
+  using local_ordinal_type  = LocalOrdinal;
+  using global_ordinal_type = GlobalOrdinal;
+  using execution_space     = typename Node::execution_space;
+  using memory_space        = typename Node::memory_space;
+  using device_type         = typename Node::device_type;
+  using node_type           = Node;
+  using local_lw_graph_type = MueLu::LocalLWGraph_kokkos<LocalOrdinal, GlobalOrdinal, node_type>;
+  using size_type           = size_t;
 
-  // Partial specialization for DeviceType
-  template<class LocalOrdinal, class GlobalOrdinal, class DeviceType>
-  class LWGraph_kokkos<LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType>> {
-  public:
-    using local_ordinal_type  = LocalOrdinal;
-    using global_ordinal_type = GlobalOrdinal;
-    using execution_space     = typename DeviceType::execution_space;
-    using memory_space        = typename DeviceType::memory_space;
-    using device_type         = Kokkos::Device<execution_space, memory_space>;
-    using range_type          = Kokkos::RangePolicy<local_ordinal_type, execution_space>;
-    using node_type           = Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType>;
-    using size_type           = size_t;
+  using map_type            = Xpetra::Map<LocalOrdinal, GlobalOrdinal, node_type>;
+  using local_graph_type    = typename local_lw_graph_type::local_graph_type;
+  using boundary_nodes_type = typename local_lw_graph_type::boundary_nodes_type;
 
-    using map_type            = Xpetra::Map<LocalOrdinal, GlobalOrdinal, node_type>;
-    using local_graph_type    = Kokkos::StaticCrsGraph<LocalOrdinal,
-                                                       Kokkos::LayoutLeft,
-                                                       device_type, void, size_t>;
-    using boundary_nodes_type = Kokkos::View<const bool*, memory_space>;
-    using row_type            = Kokkos::View<const LocalOrdinal*, memory_space>;
-
-  private:
-    // For compatibility
-    typedef node_type                                           Node;
+ private:
 #undef MUELU_LWGRAPH_KOKKOS_SHORT
 #include "MueLu_UseShortNamesOrdinal.hpp"
 
-  public:
+ public:
+  //! @name Constructors/Destructors.
+  //@{
 
-    //! @name Constructors/Destructors.
-    //@{
+  //! LWGraph constructor
+  //
+  // @param[in] graph: local graph of type Kokkos::StaticCrsGraph containing CRS data
+  // @param[in] domainMap: non-overlapping (domain) map for graph. Usually provided by AmalgamationFactory stored in UnAmalgamationInfo container
+  // @param[in] importMap: overlapping map for graph. Usually provided by AmalgamationFactory stored in UnAmalgamationInfo container
+  // @param[in] objectLabel: label string
+  LWGraph_kokkos(const local_graph_type& graph,
+                 const RCP<const map_type>& domainMap,
+                 const RCP<const map_type>& importMap,
+                 const std::string& objectLabel = "")
+    : lclLWGraph_(graph, domainMap)
+    , domainMap_(domainMap)
+    , importMap_(importMap)
+    , objectLabel_(objectLabel) {}
 
-    //! LWGraph constructor
-    //
-    // @param[in] graph: local graph of type Kokkos::StaticCrsGraph containing CRS data
-    // @param[in] domainMap: non-overlapping (domain) map for graph. Usually provided by AmalgamationFactory stored in UnAmalgamationInfo container
-    // @param[in] importMap: overlapping map for graph. Usually provided by AmalgamationFactory stored in UnAmalgamationInfo container
-    // @param[in] objectLabel: label string
-    LWGraph_kokkos(const local_graph_type&    graph,
-                   const RCP<const map_type>& domainMap,
-                   const RCP<const map_type>& importMap,
-                   const std::string&         objectLabel = "");
+  ~LWGraph_kokkos() = default;
+  //@}
 
-    ~LWGraph_kokkos() { }
-    //@}
+  const RCP<const Teuchos::Comm<int>> GetComm() const {
+    return domainMap_->getComm();
+  }
+  const RCP<const Map> GetDomainMap() const {
+    return domainMap_;
+  }
+  //! Return overlapping import map (nodes).
+  const RCP<const Map> GetImportMap() const {
+    return importMap_;
+  }
 
-    const RCP<const Teuchos::Comm<int> > GetComm() const {
-      return domainMap_->getComm();
-    }
-    const RCP<const Map> GetDomainMap() const {
-      return domainMap_;
-    }
-    //! Return overlapping import map (nodes).
-    const RCP<const Map> GetImportMap() const {
-      return importMap_;
-    }
+  //! Return number of graph vertices
+  KOKKOS_INLINE_FUNCTION size_type GetNodeNumVertices() const {
+    return lclLWGraph_.GetNodeNumVertices();
+  }
+  //! Return number of graph edges
+  KOKKOS_INLINE_FUNCTION size_type GetNodeNumEdges() const {
+    return lclLWGraph_.GetNodeNumEdges();
+  }
 
-    //! Return number of graph vertices
-    KOKKOS_INLINE_FUNCTION size_type GetNodeNumVertices() const {
-      return graph_.numRows();
-    }
-    //! Return number of graph edges
-    KOKKOS_INLINE_FUNCTION size_type GetNodeNumEdges() const {
-      return graph_.row_map(GetNodeNumVertices());
-    }
+  //! Returns the maximum number of entries across all rows/columns on this node
+  KOKKOS_INLINE_FUNCTION size_type getLocalMaxNumRowEntries() const {
+    return lclLWGraph_.getLocalMaxNumRowEntries();
+  }
 
-    //! Returns the maximum number of entries across all rows/columns on this node
-    KOKKOS_INLINE_FUNCTION size_type getNodeMaxNumRowEntries () const {
-      return maxNumRowEntries_;
-    }
+  /// Return a simple one-line description of the Graph.
+  std::string description() const {
+    return "LWGraph (" + objectLabel_ + ")";
+  }
 
-    //! Return the row pointers of the local graph
-    KOKKOS_INLINE_FUNCTION typename local_graph_type::row_map_type getRowPtrs() const {
-      return graph_.row_map;
-    }
+  //! Print the Graph with some verbosity level to an FancyOStream object.
+  void print(Teuchos::FancyOStream& out, const VerbLevel verbLevel = Default) const;
 
-    //! Return the list entries in the local graph
-    KOKKOS_INLINE_FUNCTION typename local_graph_type::entries_type getEntries() const {
-      return graph_.entries;
-    }
+  local_lw_graph_type& getLocalLWGraph() const {
+    return lclLWGraph_;
+  }
 
-    //! Return the list of vertices adjacent to the vertex 'v'.
-    // Unfortunately, C++11 does not support the following:
-    //    auto getNeighborVertices(LO i) const -> decltype(rowView)
-    // auto return with decltype was only introduced in C++14
-    KOKKOS_INLINE_FUNCTION
-    Kokkos::GraphRowViewConst<local_graph_type> getNeighborVertices(LO i) const {
-      auto rowView = graph_.rowConst(i);
+ private:
+  //! Underlying graph (with label)
+  mutable local_lw_graph_type lclLWGraph_;
 
-      return rowView;
-    }
+  //! Graph maps
+  const RCP<const map_type> domainMap_;
+  const RCP<const map_type> importMap_;
 
-    //! Return true if vertex with local id 'v' is on current process.
-    KOKKOS_INLINE_FUNCTION bool isLocalNeighborVertex(LO i) const {
-      return i >= minLocalIndex_ && i <= maxLocalIndex_;
-    }
+  //! Name of this graph.
+  const std::string objectLabel_;
+};
 
-    //! Set boolean array indicating which rows correspond to Dirichlet boundaries.
-    KOKKOS_INLINE_FUNCTION void SetBoundaryNodeMap(const boundary_nodes_type bndry) {
-      dirichletBoundaries_ = bndry;
-    }
-
-    //! Returns map with global ids of boundary nodes.
-    KOKKOS_INLINE_FUNCTION const boundary_nodes_type GetBoundaryNodeMap() const {
-      return dirichletBoundaries_;
-    }
-
-    /// Return a simple one-line description of the Graph.
-    std::string description() const {
-      return "LWGraph (" + objectLabel_ + ")";
-    }
-
-    //! Print the Graph with some verbosity level to an FancyOStream object.
-    void print(Teuchos::FancyOStream &out, const VerbLevel verbLevel = Default) const;
-
-  private:
-
-    //! Underlying graph (with label)
-    const local_graph_type      graph_;
-
-    //! Graph maps
-    const RCP<const map_type>   domainMap_;
-    const RCP<const map_type>   importMap_;
-
-    //! Boolean array marking Dirichlet rows.
-    boundary_nodes_type         dirichletBoundaries_;
-
-    //! Local index boundaries (cached from domain map)
-    LO        minLocalIndex_, maxLocalIndex_;
-    size_type maxNumRowEntries_;
-
-    //! Name of this graph.
-    const std::string objectLabel_;
-  };
-
-}
+}  // namespace MueLu
 
 #define MUELU_LWGRAPH_KOKKOS_SHORT
-#endif // HAVE_MUELU_KOKKOS_REFACTOR
-#endif // MUELU_LWGRAPH_KOKKOS_DECL_HPP
+#endif  // MUELU_LWGRAPH_KOKKOS_DECL_HPP

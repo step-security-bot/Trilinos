@@ -1,5 +1,5 @@
 /*
- * Copyright(C) 1999-2021 National Technology & Engineering Solutions
+ * Copyright(C) 1999-2023 National Technology & Engineering Solutions
  * of Sandia, LLC (NTESS).  Under the terms of Contract DE-NA0003525 with
  * NTESS, the U.S. Government retains certain rights in this software.
  *
@@ -28,7 +28,6 @@
 #include <utility>
 #include <vector>
 
-#include "copy_string_cpp.h"
 #include "format_time.h"
 #include "open_file_limit.h"
 #include "sys_info.h"
@@ -115,7 +114,7 @@ namespace {
     }
   }
 
-  void exodus_error(int lineno)
+  [[noreturn]] void exodus_error(int lineno)
   {
     std::ostringstream errmsg;
     fmt::print(errmsg,
@@ -235,7 +234,7 @@ namespace {
     return pos;
   }
 
-  template <typename T> static void uniquify(std::vector<T> &vec)
+  template <typename T> void uniquify(std::vector<T> &vec)
   {
 
 #if USE_STD_SORT
@@ -485,7 +484,7 @@ int main(int argc, char *argv[])
     int part_count = interFace.part_count();
     if (part_count <= 1) {
       fmt::print("INFO: Only one processor or part, no concatenation needed.\n");
-      return (EXIT_SUCCESS);
+      return EXIT_SUCCESS;
     }
 
     int error = 0;
@@ -674,7 +673,7 @@ int main(int argc, char *argv[])
     if (rank == 0) {
       add_to_log(argv[0], static_cast<int>(end_time - begin_time));
     }
-    return (error);
+    return error;
   }
   catch (std::exception &e) {
     fmt::print(stderr, "{}\n", e.what());
@@ -695,7 +694,7 @@ int epu(SystemInterface &interFace, int start_part, int part_count, int cycle, T
   }
   int p; // file counter p=0..part_count-1
 
-  auto mytitle = new char[MAX_LINE_LENGTH + 1];
+  auto *mytitle = new char[MAX_LINE_LENGTH + 1];
   memset(mytitle, '\0', MAX_LINE_LENGTH + 1);
 
   Mesh global;
@@ -877,10 +876,10 @@ int epu(SystemInterface &interFace, int start_part, int part_count, int cycle, T
         fmt::print("Node Sharing information: (Part:Local Node Id)\n");
         for (size_t i = 0; i < global_node_map.size(); i++) {
           if (num_shared[i] > 1) {
-            fmt::print("Global Node {}:", i + 1);
+            fmt::print("Global Node {}:", fmt::group_digits(i + 1));
             for (int pc = 0; pc < part_count; pc++) {
               if (shared[pc][i] >= 1) {
-                fmt::print("\t{}:{}", pc, shared[pc][i]);
+                fmt::print("\t{}:{}", pc, fmt::group_digits(shared[pc][i]));
               }
             }
             fmt::print("\n");
@@ -1477,9 +1476,10 @@ int epu(SystemInterface &interFace, int start_part, int part_count, int cycle, T
     }
 
     if (nodal_vars.count(InOut::OUT) > 0) {
+      T fill_val = -std::numeric_limits<T>::max();
       for (int i = 0; i < nodal_vars.count(InOut::IN); i++) {
         if (debug_level & 2) {
-          std::fill(master_values.begin(), master_values.end(), T(0.0));
+          std::fill(master_values.begin(), master_values.end(), fill_val);
         }
 
         for (p = 0; p < part_count; p++) {
@@ -1495,9 +1495,10 @@ int epu(SystemInterface &interFace, int start_part, int part_count, int cycle, T
             if (debug_level & 2) {
               for (size_t j = 0; j < node_count; j++) {
                 size_t nodal_value = local_node_to_global[p][j];
-                if (master_values[nodal_value] != 0 && master_values[nodal_value] != values[j]) {
+                if (master_values[nodal_value] != fill_val &&
+                    master_values[nodal_value] != values[j]) {
                   fmt::print(stderr, "Variable {}, Node {}, old = {}, new = {}\n", i + 1,
-                             nodal_value, master_values[nodal_value], values[j]);
+                             fmt::group_digits(nodal_value), master_values[nodal_value], values[j]);
                 }
               }
             }
@@ -1636,8 +1637,8 @@ int epu(SystemInterface &interFace, int start_part, int part_count, int cycle, T
     double time_per_step       = elapsed / time_step_out;
     double percentage_done     = (time_step_out * 100.0) / output_steps;
     double estimated_remaining = time_per_step * (output_steps - time_step_out);
-    fmt::print("Wrote step {:6L}, time {:8.4e}\t\t[{:5.1f}%, Elapsed={}, ETA={}]    \r",
-               time_step + 1, time_val, percentage_done, format_time(elapsed),
+    fmt::print("Wrote step {:6}, time {:8.4e}\t\t[{:5.1f}%, Elapsed={}, ETA={}]    \r",
+               fmt::group_digits(time_step + 1), time_val, percentage_done, format_time(elapsed),
                format_time(estimated_remaining));
     if (debug_level & 1) {
       fmt::print("\n");
@@ -1651,11 +1652,11 @@ int epu(SystemInterface &interFace, int start_part, int part_count, int cycle, T
   if (subcycles > 2) {
     fmt::print("{}/{} ", cycle + 1, subcycles);
   }
-  fmt::print("\n\nTotal Execution Time = {:.2f} seconds, Maximum memory = {:L} MiBytes.\n******* "
+  fmt::print("\n\nTotal Execution Time = {:.2f} seconds, Maximum memory = {} MiBytes.\n******* "
              "END *******\n",
              seacas_timer() - execution_time,
-             (get_hwm_memory_info() + 1024 * 1024 - 1) / (1024 * 1024));
-  return (0);
+             fmt::group_digits((get_hwm_memory_info() + 1024 * 1024 - 1) / (1024 * 1024)));
+  return 0;
 }
 
 namespace {
@@ -1679,6 +1680,7 @@ namespace {
 
       for (int i = 0; i < global.assemblyCount; i++) {
         delete[] assemblies[i].entity_list;
+	// This is `calloc`d in `ex_get_assemblies` call.
         free(assemblies[i].name);
       }
     }
@@ -1715,9 +1717,9 @@ namespace {
     int error = 0;
 
     // I. Get and store info strings, if they exist
-    int  num_info_records = ex_inquire_int(id, EX_INQ_INFO);
-    auto info_records     = new char *[num_info_records + 1];
-    int  info_string_len  = MAX_LINE_LENGTH;
+    int   num_info_records = ex_inquire_int(id, EX_INQ_INFO);
+    auto *info_records     = new char *[num_info_records + 1];
+    int   info_string_len  = MAX_LINE_LENGTH;
 
     {
       for (int i = 0; i < num_info_records + 1; i++) {
@@ -1754,8 +1756,8 @@ namespace {
       char *qa_record[1][4];
     };
 
-    int  num_qa_records = ex_inquire_int(id, EX_INQ_QA);
-    auto qaRecord       = new qa_element[num_qa_records + 1];
+    int   num_qa_records = ex_inquire_int(id, EX_INQ_QA);
+    auto *qaRecord       = new qa_element[num_qa_records + 1];
     for (int i = 0; i < num_qa_records + 1; i++) {
       for (int j = 0; j < 4; j++) {
         qaRecord[i].qa_record[0][j]    = new char[MAX_STR_LENGTH + 1];
@@ -1953,11 +1955,11 @@ namespace {
           if (x[node] != FillValue && y[node] != FillValue && z[node] != FillValue) {
             if (x[node] != local_x[i] || y[node] != local_y[i] || z[node] != local_z[i]) {
               fmt::print(stderr,
-                         "\nWARNING: Node {:L} has different coordinates in at least two files.\n"
+                         "\nWARNING: Node {} has different coordinates in at least two files.\n"
                          "         cur value = {:14.6e} {:14.6e} {:14.6e}\n"
                          "         new value = {:14.6e} {:14.6e} {:14.6e} from processor {}\n",
-                         node + 1, x[node], y[node], z[node], local_x[i], local_y[i], local_z[i],
-                         proc);
+                         fmt::group_digits(node + 1), x[node], y[node], z[node], local_x[i],
+                         local_y[i], local_z[i], proc);
             }
           }
         }
@@ -1980,10 +1982,11 @@ namespace {
           if (x[node] != FillValue && y[node] != FillValue) {
             if (x[node] != local_x[i] || y[node] != local_y[i]) {
               fmt::print(stderr,
-                         "\nWARNING: Node {:L} has different coordinates in at least two files.\n"
+                         "\nWARNING: Node {} has different coordinates in at least two files.\n"
                          "         cur value = {:14.6e} {:14.6e}\n"
                          "         new value = {:14.6e} {:14.6e} from processor {}\n",
-                         node + 1, x[node], y[node], local_x[i], local_y[i], proc);
+                         fmt::group_digits(node + 1), x[node], y[node], local_x[i], local_y[i],
+                         proc);
             }
           }
         }
@@ -2005,9 +2008,9 @@ namespace {
           if (x[node] != FillValue && y[node] != FillValue) {
             if (x[node] != local_x[i]) {
               fmt::print(stderr,
-                         "\nWARNING: Node {:L} has different coordinates in at least two files.\n"
+                         "\nWARNING: Node {} has different coordinates in at least two files.\n"
                          "         cur value = {:14.6e}\tnew value = {:14.6e} from processor {}\n",
-                         node + 1, x[node], local_x[i], proc);
+                         fmt::group_digits(node + 1), x[node], local_x[i], proc);
             }
           }
         }
@@ -2129,9 +2132,9 @@ namespace {
           free_name_array(names, temp_block.num_attribute);
         }
         if ((debug_level & 4) != 0U) {
-          fmt::print(", Name = '{}', Elements = {:12L}, Nodes/element = {}, Attributes = {}\n",
-                     blocks[p][b].name_, blocks[p][b].entity_count(), blocks[p][b].nodesPerElement,
-                     blocks[p][b].attributeCount);
+          fmt::print(", Name = '{}', Elements = {:12}, Nodes/element = {}, Attributes = {}\n",
+                     blocks[p][b].name_, fmt::group_digits(blocks[p][b].entity_count()),
+                     blocks[p][b].nodesPerElement, blocks[p][b].attributeCount);
         }
       }
     } // end for p=0..part_count
@@ -2168,11 +2171,12 @@ namespace {
 
       if (debug_level & 4) {
         fmt::print("\nOutput element block info for...\n"
-                   "Block {}, Id = {}, Name = '{}', Elements = {:12L}, Nodes/element = {}, "
+                   "Block {}, Id = {}, Name = '{}', Elements = {:12}, Nodes/element = {}, "
                    "Attributes = {}\n"
                    "B{}:\t",
-                   b, glob_blocks[b].id, glob_blocks[b].name_, glob_blocks[b].entity_count(),
-                   glob_blocks[b].nodesPerElement, glob_blocks[b].attributeCount, b);
+                   b, glob_blocks[b].id, glob_blocks[b].name_,
+                   fmt::group_digits(glob_blocks[b].entity_count()), glob_blocks[b].nodesPerElement,
+                   glob_blocks[b].attributeCount, b);
       }
 
       size_t max_nodes = glob_blocks[b].entity_count() * glob_blocks[b].nodesPerElement;
@@ -2301,10 +2305,11 @@ namespace {
 
       if (debug_level & 4) {
         fmt::print("\nOutput element block info for...\n"
-                   "Block {}, Id = {}, Name = '{}', Elements = {:12L}, Nodes/element = {}, "
+                   "Block {}, Id = {}, Name = '{}', Elements = {:12}, Nodes/element = {}, "
                    "Attributes = {}\n",
-                   b, glob_blocks[b].id, glob_blocks[b].name_, glob_blocks[b].entity_count(),
-                   glob_blocks[b].nodesPerElement, glob_blocks[b].attributeCount);
+                   b, glob_blocks[b].id, glob_blocks[b].name_,
+                   fmt::group_digits(glob_blocks[b].entity_count()), glob_blocks[b].nodesPerElement,
+                   glob_blocks[b].attributeCount);
       }
 
       int id_out = ExodusFile::output(); // output file identifier
@@ -2341,7 +2346,7 @@ namespace {
 
           if (debug_level & 4) {
             fmt::print(stderr, "part, block, offset, count = {} {} {} {}\n", p, bid,
-                       part_block_offset, element_count);
+                       part_block_offset, fmt::group_digits(element_count));
           }
           error = ex_put_partial_conn(id_out, EX_ELEM_BLOCK, bid, part_block_offset, element_count,
                                       local_linkage.data(), nullptr, nullptr);
@@ -2349,7 +2354,7 @@ namespace {
             fmt::print(stderr,
                        "ERROR: (EPU) Cannot output element block connectivity for block {} on part "
                        "{} (offset = {}, count = {}).\n",
-                       bid, p + start_part, part_block_offset, element_count);
+                       bid, p + start_part, part_block_offset, fmt::group_digits(element_count));
             exodus_error(__LINE__);
           }
 
@@ -2540,7 +2545,7 @@ namespace {
                        "ERROR: (EPU) The element ids for element block {} are not consistent.\n"
                        "Block {}, Id = {} min/max id = {}/{} size = {}.\n",
                        glob_blocks[b].id, b, glob_blocks[b].id, min_id + 1, max_id + 1,
-                       glob_blocks[b].entity_count());
+                       fmt::group_digits(glob_blocks[b].entity_count()));
             throw std::runtime_error(errmsg.str());
           }
         }
@@ -2717,7 +2722,7 @@ namespace {
                        "ERROR: (EPU) The edge ids for edge block {} are not consistent.\n"
                        "Block {}, Id = {} min/max id = {}/{} size = {}.\n",
                        glob_edgeblocks[b].id, b, glob_edgeblocks[b].id, min_id + 1, max_id + 1,
-                       glob_edgeblocks[b].entity_count());
+                       fmt::group_digits(glob_edgeblocks[b].entity_count()));
             throw std::runtime_error(errmsg.str());
           }
         }
@@ -2894,7 +2899,7 @@ namespace {
                        "ERROR: (EPU) The face ids for face block {} are not consistent.\n"
                        "Block {}, Id = {} min/max id = {}/{} size = {}.\n",
                        glob_faceblocks[b].id, b, glob_faceblocks[b].id, min_id + 1, max_id + 1,
-                       glob_faceblocks[b].entity_count());
+                       fmt::group_digits(glob_faceblocks[b].entity_count()));
             throw std::runtime_error(errmsg.str());
           }
         }
@@ -3145,7 +3150,7 @@ namespace {
       // element blocks...
       std::string var_name;
       int         var_count = 0;
-      for (auto &elem : variable_list) {
+      for (const auto &elem : variable_list) {
         if (var_name == elem.first) {
           continue;
         }
@@ -3185,19 +3190,23 @@ namespace {
     // Write out Global info
     if (rank == 0) {
       fmt::print(" Title: {}\n\n"
-                 " Number of coordinates per node  = {:15L}\n"
-                 " Number of nodes                 = {:15L}\n"
-                 " Number of elements              = {:15L}\n"
-                 " Number of element blocks        = {:15L}\n"
-                 " Number of assemblies            = {:15L}\n\n"
-                 " Number of nodal point sets      = {:15L}\n"
-                 " Number of element side sets     = {:15L}\n\n"
-                 " Number of edge blocks           = {:15L}\n"
-                 " Number of face blocks           = {:15L}\n\n",
-                 global.title, global.dimensionality, global.nodeCount, global.elementCount,
-                 global.count(Excn::ObjectType::EBLK), global.count(Excn::ObjectType::ASSM),
-                 global.count(Excn::ObjectType::NSET), global.count(Excn::ObjectType::SSET),
-                 global.count(Excn::ObjectType::EDBLK), global.count(Excn::ObjectType::FABLK));
+                 " Number of coordinates per node  = {:15}\n"
+                 " Number of nodes                 = {:15}\n"
+                 " Number of elements              = {:15}\n"
+                 " Number of element blocks        = {:15}\n"
+                 " Number of assemblies            = {:15}\n\n"
+                 " Number of nodal point sets      = {:15}\n"
+                 " Number of element side sets     = {:15}\n\n"
+                 " Number of edge blocks           = {:15}\n"
+                 " Number of face blocks           = {:15}\n\n",
+                 global.title, fmt::group_digits(global.dimensionality),
+                 fmt::group_digits(global.nodeCount), fmt::group_digits(global.elementCount),
+                 fmt::group_digits(global.count(Excn::ObjectType::EBLK)),
+                 fmt::group_digits(global.count(Excn::ObjectType::ASSM)),
+                 fmt::group_digits(global.count(Excn::ObjectType::NSET)),
+                 fmt::group_digits(global.count(Excn::ObjectType::SSET)),
+                 fmt::group_digits(global.count(Excn::ObjectType::EDBLK)),
+                 fmt::group_digits(global.count(Excn::ObjectType::FABLK)));
     }
     int id_out = ExodusFile::output();
     get_put_qa(ExodusFile(0), id_out);
@@ -3297,7 +3306,8 @@ namespace {
                      "WARNING: Nodeset {} with id {} on processor {} has an invalid distribution "
                      "factor count ({})."
                      " The distribution factors will be set to 1.0 on this nodeset.\n",
-                     nodesets[p][iset].name_, nodesets[p][iset].id, p, nodesets[p][iset].dfCount);
+                     nodesets[p][iset].name_, nodesets[p][iset].id, p,
+                     fmt::group_digits(nodesets[p][iset].dfCount));
           nodesets[p][iset].dfCount = 0;
         }
 
@@ -3705,7 +3715,8 @@ namespace {
     }
 
     if (rank == 0) {
-      fmt::print("Global edge block count = {}\n", global.count(Excn::ObjectType::EDBLK));
+      fmt::print("Global edge block count = {}\n",
+                 fmt::group_digits(global.count(Excn::ObjectType::EDBLK)));
     }
 
     if (global.count(Excn::ObjectType::EDBLK) == 0) {
@@ -3767,12 +3778,12 @@ namespace {
 
         edgeblocks[p][b].id = edgeblock_id[b];
         if (name[0] != '\0') {
-          edgeblocks[p][b].name_ = &name[0];
+          edgeblocks[p][b].name_ = name.data();
         }
         if (p == 0) {
           glob_edgeblocks[b].id = edgeblock_id[b];
           if (name[0] != '\0') {
-            glob_edgeblocks[b].name_ = &name[0];
+            glob_edgeblocks[b].name_ = name.data();
           }
         }
 
@@ -3806,8 +3817,8 @@ namespace {
           free_name_array(names, temp_block.num_attribute);
         }
         if ((debug_level & 4) != 0U) {
-          fmt::print(", Name = '{}', Edges = {:12L}, Nodes/Edge= {}, Attributes = {}\n",
-                     edgeblocks[p][b].name_, edgeblocks[p][b].entity_count(),
+          fmt::print(", Name = '{}', Edges = {:12}, Nodes/Edge= {}, Attributes = {}\n",
+                     edgeblocks[p][b].name_, fmt::group_digits(edgeblocks[p][b].entity_count()),
                      edgeblocks[p][b].nodesPerEdge, edgeblocks[p][b].attributeCount);
         }
       }
@@ -3844,12 +3855,12 @@ namespace {
 
       if (debug_level & 64) {
         fmt::print("\nOutput edge block info for...\n"
-                   "Edge Block {}, Id = {}, Name = '{}', Edges = {:12L}, Nodes/Edge = {}, "
+                   "Edge Block {}, Id = {}, Name = '{}', Edges = {:12}, Nodes/Edge = {}, "
                    "Attributes = {}\n"
                    "B{}:\t",
                    b, glob_edgeblocks[b].id, glob_edgeblocks[b].name_,
-                   glob_edgeblocks[b].entity_count(), glob_edgeblocks[b].nodesPerEdge,
-                   glob_edgeblocks[b].attributeCount, b);
+                   fmt::group_digits(glob_edgeblocks[b].entity_count()),
+                   glob_edgeblocks[b].nodesPerEdge, glob_edgeblocks[b].attributeCount, b);
       }
 
       size_t max_nodes = glob_edgeblocks[b].entity_count();
@@ -3884,6 +3895,7 @@ namespace {
           size_t maximum_nodes = edgeblocks[p][b].entity_count();
           maximum_nodes *= edgeblocks[p][b].nodesPerEdge;
           std::vector<INT> local_linkage(maximum_nodes);
+          SMART_ASSERT(block_linkage != nullptr);
 
           ex_entity_id bid = edgeblocks[p][b].id;
           error = ex_get_conn(id, EX_EDGE_BLOCK, bid, local_linkage.data(), nullptr, nullptr);
@@ -3994,11 +4006,11 @@ namespace {
 
       if (debug_level & 64) {
         fmt::print("\nOutput edge block info for...\n"
-                   "Edge Block {}, Id = {}, Name = '{}', Edges = {:12L}, Nodes/Edge = {}, "
+                   "Edge Block {}, Id = {}, Name = '{}', Edges = {:12}, Nodes/Edge = {}, "
                    "Attributes = {}\n",
                    b, glob_edgeblocks[b].id, glob_edgeblocks[b].name_,
-                   glob_edgeblocks[b].entity_count(), glob_edgeblocks[b].nodesPerEdge,
-                   glob_edgeblocks[b].attributeCount);
+                   fmt::group_digits(glob_edgeblocks[b].entity_count()),
+                   glob_edgeblocks[b].nodesPerEdge, glob_edgeblocks[b].attributeCount);
       }
 
       int id_out = ExodusFile::output(); // output file identifier
@@ -4034,7 +4046,7 @@ namespace {
 
           if (debug_level & 64) {
             fmt::print(stderr, "part, block, offset, count = {} {} {} {}\n", p, bid,
-                       part_block_offset, edge_count);
+                       part_block_offset, fmt::group_digits(edge_count));
           }
           error = ex_put_partial_conn(id_out, EX_EDGE_BLOCK, bid, part_block_offset, edge_count,
                                       local_linkage.data(), nullptr, nullptr);
@@ -4042,7 +4054,7 @@ namespace {
             fmt::print(stderr,
                        "ERROR: (EPU) Cannot output edge block connectivity for block {} on part "
                        "{} (offset = {}, count = {}).\n",
-                       bid, p + start_part, part_block_offset, edge_count);
+                       bid, p + start_part, part_block_offset, fmt::group_digits(edge_count));
             exodus_error(__LINE__);
           }
 
@@ -4143,12 +4155,12 @@ namespace {
 
         faceblocks[p][b].id = faceblock_id[b];
         if (name[0] != '\0') {
-          faceblocks[p][b].name_ = &name[0];
+          faceblocks[p][b].name_ = name.data();
         }
         if (p == 0) {
           glob_faceblocks[b].id = faceblock_id[b];
           if (name[0] != '\0') {
-            glob_faceblocks[b].name_ = &name[0];
+            glob_faceblocks[b].name_ = name.data();
           }
         }
 
@@ -4182,8 +4194,8 @@ namespace {
           free_name_array(names, temp_block.num_attribute);
         }
         if ((debug_level & 4) != 0U) {
-          fmt::print(", Name = '{}', Faces = {:12L}, Nodes/Face= {}, Attributes = {}\n",
-                     faceblocks[p][b].name_, faceblocks[p][b].entity_count(),
+          fmt::print(", Name = '{}', Faces = {:12}, Nodes/Face= {}, Attributes = {}\n",
+                     faceblocks[p][b].name_, fmt::group_digits(faceblocks[p][b].entity_count()),
                      faceblocks[p][b].nodesPerFace, faceblocks[p][b].attributeCount);
         }
       }
@@ -4220,12 +4232,12 @@ namespace {
 
       if (debug_level & 64) {
         fmt::print("\nOutput face block info for...\n"
-                   "Face Block {}, Id = {}, Name = '{}', Faces = {:12L}, Nodes/Face = {}, "
+                   "Face Block {}, Id = {}, Name = '{}', Faces = {:12}, Nodes/Face = {}, "
                    "Attributes = {}\n"
                    "B{}:\t",
                    b, glob_faceblocks[b].id, glob_faceblocks[b].name_,
-                   glob_faceblocks[b].entity_count(), glob_faceblocks[b].nodesPerFace,
-                   glob_faceblocks[b].attributeCount, b);
+                   fmt::group_digits(glob_faceblocks[b].entity_count()),
+                   glob_faceblocks[b].nodesPerFace, glob_faceblocks[b].attributeCount, b);
       }
 
       size_t max_nodes = glob_faceblocks[b].entity_count();
@@ -4260,6 +4272,7 @@ namespace {
           size_t maximum_nodes = faceblocks[p][b].entity_count();
           maximum_nodes *= faceblocks[p][b].nodesPerFace;
           std::vector<INT> local_linkage(maximum_nodes);
+          SMART_ASSERT(block_linkage != nullptr);
 
           ex_entity_id bid = faceblocks[p][b].id;
           error = ex_get_conn(id, EX_FACE_BLOCK, bid, local_linkage.data(), nullptr, nullptr);
@@ -4269,13 +4282,13 @@ namespace {
                        bid, p + start_part);
             exodus_error(__LINE__);
           }
-          size_t                  pos                     = 0;
-          size_t                  goffset                 = glob_faceblocks[b].offset_;
-          size_t                  face_count              = faceblocks[p][b].entity_count();
-          size_t                  boffset                 = faceblocks[p][b].offset_;
-          size_t                  npe                     = faceblocks[p][b].nodesPerFace;
-          const std::vector<INT> &proc_loc_face_to_global = local_face_to_global[p];
-          const std::vector<INT> &proc_loc_node_to_global = local_node_to_global[p];
+          size_t      pos                     = 0;
+          size_t      goffset                 = glob_faceblocks[b].offset_;
+          size_t      face_count              = faceblocks[p][b].entity_count();
+          size_t      boffset                 = faceblocks[p][b].offset_;
+          size_t      npe                     = faceblocks[p][b].nodesPerFace;
+          const auto &proc_loc_face_to_global = local_face_to_global[p];
+          const auto &proc_loc_node_to_global = local_node_to_global[p];
 
           for (size_t e = 0; e < face_count; e++) {
             global_block_pos = proc_loc_face_to_global[(e + boffset)] - goffset;
@@ -4372,11 +4385,11 @@ namespace {
 
       if (debug_level & 64) {
         fmt::print("\nOutput face block info for...\n"
-                   "Face Block {}, Id = {}, Name = '{}', Faces = {:12L}, Nodes/Face = {}, "
+                   "Face Block {}, Id = {}, Name = '{}', Faces = {:12}, Nodes/Face = {}, "
                    "Attributes = {}\n",
                    b, glob_faceblocks[b].id, glob_faceblocks[b].name_,
-                   glob_faceblocks[b].entity_count(), glob_faceblocks[b].nodesPerFace,
-                   glob_faceblocks[b].attributeCount);
+                   fmt::group_digits(glob_faceblocks[b].entity_count()),
+                   glob_faceblocks[b].nodesPerFace, glob_faceblocks[b].attributeCount);
       }
 
       int id_out = ExodusFile::output(); // output file identifier
@@ -4555,7 +4568,7 @@ namespace {
 
     std::string var_name;
     int         out_position = -1;
-    for (auto &variable_name : variable_names) {
+    for (const auto &variable_name : variable_names) {
       if (variable_name.second > 0) {
         if (var_name != variable_name.first) {
           var_name = variable_name.first;
@@ -4603,9 +4616,7 @@ namespace {
                      variable_name.first, variable_name.second);
           throw std::runtime_error(errmsg.str());
         }
-        else {
-          global.truthTable[static_cast<int>(vars.objectType)][truth_table_loc] = 1;
-        }
+        global.truthTable[static_cast<int>(vars.objectType)][truth_table_loc] = 1;
       }
     }
 
@@ -4708,7 +4719,7 @@ namespace {
     const char *c2 = s2;
     for (;;) {
       if (::toupper(*c1) != ::toupper(*c2)) {
-        return (::toupper(*c1) - ::toupper(*c2));
+        return ::toupper(*c1) - ::toupper(*c2);
       }
       if (*c1 == '\0') {
         return 0;
@@ -4732,7 +4743,7 @@ namespace {
   inline bool is_whitespace(char c)
   {
     static char white_space[] = {' ', '\t', '\n', '\r', ',', '\0'};
-    return (strchr(white_space, c) != nullptr);
+    return strchr(white_space, c) != nullptr;
   }
 
   void compress_white_space(char *str)

@@ -46,9 +46,6 @@
 #ifndef MUELU_SEMICOARSENPFACTORY_KOKKOS_DECL_HPP
 #define MUELU_SEMICOARSENPFACTORY_KOKKOS_DECL_HPP
 
-#define HAVE_MUELU_KOKKOS_REFACTOR
-#ifdef HAVE_MUELU_KOKKOS_REFACTOR
-
 #include <Xpetra_Matrix_fwd.hpp>
 
 #include "MueLu_ConfigDefs.hpp"
@@ -97,32 +94,25 @@ namespace MueLu {
 */
 
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
-class SemiCoarsenPFactory_kokkos;
-
-template <class Scalar, class LocalOrdinal, class GlobalOrdinal,
-          class DeviceType>
-class SemiCoarsenPFactory_kokkos<
-    Scalar, LocalOrdinal, GlobalOrdinal,
-    Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType>> : public PFactory {
-public:
+class SemiCoarsenPFactory_kokkos : public PFactory {
+ public:
   typedef LocalOrdinal local_ordinal_type;
   typedef GlobalOrdinal global_ordinal_type;
-  typedef typename DeviceType::execution_space execution_space;
-  typedef Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType> node_type;
+  typedef typename Node::execution_space execution_space;
+  typedef typename Node::device_type DeviceType;
+  typedef Node node_type;
 
-private:
-  // For compatibility
-  typedef node_type Node;
-
+ private:
 #undef MUELU_SEMICOARSENPFACTORY_KOKKOS_SHORT
 #include "MueLu_UseShortNames.hpp"
 
-public:
+ public:
   //! @name Constructors/Destructors.
   //@{
 
   //! Constructor
-  SemiCoarsenPFactory_kokkos() : bTransferCoordinates_(false) {}
+  SemiCoarsenPFactory_kokkos()
+    : bTransferCoordinates_(false) {}
 
   //! Destructor.
   virtual ~SemiCoarsenPFactory_kokkos() = default;
@@ -155,10 +145,9 @@ public:
   // boolean which is true if coordinate information is available to be
   // transferred to coarse coordinate information
   mutable bool bTransferCoordinates_;
-}; // class SemiCoarsenPFactory_kokkos
+};  // class SemiCoarsenPFactory_kokkos
 
-} // namespace MueLu
+}  // namespace MueLu
 
 #define MUELU_SEMICOARSENPFACTORY_KOKKOS_SHORT
-#endif // HAVE_MUELU_KOKKOS_REFACTOR
-#endif // MUELU_SEMICOARSENPFACTORY_KOKKOS_DECL_HPP
+#endif  // MUELU_SEMICOARSENPFACTORY_KOKKOS_DECL_HPP

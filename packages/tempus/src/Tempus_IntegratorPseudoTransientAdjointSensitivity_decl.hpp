@@ -163,13 +163,8 @@ public:
   virtual void setStatus(const Status st) override;
   /// Get the Stepper
   virtual Teuchos::RCP<Stepper<Scalar> > getStepper() const override;
-#ifndef TEMPUS_HIDE_DEPRECATED_CODE
-  /// Return a copy of the Tempus ParameterList
-  TEMPUS_DEPRECATED
-  virtual Teuchos::RCP<Teuchos::ParameterList> getTempusParameterList() override;
-  TEMPUS_DEPRECATED
-  virtual void setTempusParameterList(Teuchos::RCP<Teuchos::ParameterList> pl) override;
-#endif
+  Teuchos::RCP<Stepper<Scalar> > getStateStepper() const;
+  Teuchos::RCP<Stepper<Scalar> > getSensStepper() const;
   /// Get the SolutionHistory
   virtual Teuchos::RCP<const SolutionHistory<Scalar> > getSolutionHistory() const override;
   Teuchos::RCP<const SolutionHistory<Scalar> > getStateSolutionHistory() const;
@@ -244,6 +239,14 @@ public:
   //! What mode the current time integration step is in
   SensitivityStepMode getStepMode() const;
 
+  //! Set/get whether to do the forward integration
+  void setDoForwardIntegration(const bool f) { do_forward_integration_ = f; }
+  bool getDoForwardIntegration() const { return do_forward_integration_; }
+
+  //! Set/get whether to do the adjoint integration
+  void setDoAdjointIntegration(const bool f) { do_adjoint_integration_ = f; }
+  bool getDoAdjointIntegration() const { return do_adjoint_integration_; }
+
 protected:
   typedef Thyra::DefaultMultiVectorProductVector<Scalar> DMVPV;
 
@@ -267,6 +270,8 @@ protected:
   Teuchos::RCP<Thyra::VectorBase<Scalar> > g_;
   Teuchos::RCP<DMVPV> dgdp_;
   SensitivityStepMode stepMode_;
+  bool do_forward_integration_;
+  bool do_adjoint_integration_;
 };
 
 /// Nonmember constructor

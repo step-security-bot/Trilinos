@@ -49,7 +49,7 @@ public:
     JBlock->fillComplete();
 
     // Fill JBlock with random numbers for a better test.
-    using IST = typename Kokkos::Details::ArithTraits<zscalar_t>::val_type;
+    using IST = typename Kokkos::ArithTraits<zscalar_t>::val_type;
     using pool_type = 
           Kokkos::Random_XorShift64_Pool<execution_space_t>;
     pool_type rand_pool(static_cast<uint64_t>(me));
@@ -82,8 +82,8 @@ public:
     cyclic_graph->fillComplete(vMapCyclic, wMapCyclic);
     JCyclic = rcp(new matrix_t(cyclic_graph));
     JCyclic->resumeFill();
-    TEUCHOS_ASSERT(block_graph->getNodeNumRows() == 
-                   cyclic_graph->getNodeNumRows());
+    TEUCHOS_ASSERT(block_graph->getLocalNumRows() == 
+                   cyclic_graph->getLocalNumRows());
     {
       auto val_s = JBlock->getLocalMatrixHost().values;
       auto val_d = JCyclic->getLocalMatrixHost().values;
@@ -165,14 +165,14 @@ public:
     // Check that values of J = values of Jp
     auto J_local_matrix = J->getLocalMatrixDevice();
     auto Jp_local_matrix = Jp->getLocalMatrixDevice();
-    const size_t num_local_nz = J->getNodeNumEntries();
+    const size_t num_local_nz = J->getLocalNumEntries();
 
     Kokkos::parallel_reduce(
       "TpetraCrsColorer::testReconstructedMatrix()",
       Kokkos::RangePolicy<execution_space_t>(0, num_local_nz),
       KOKKOS_LAMBDA(const size_t nz, int &errorcnt) {
         if (J_local_matrix.values(nz) != Jp_local_matrix.values(nz)) {
-          printf("Error in nonzero comparison %zu:  %g != %g", 
+          Kokkos::printf("Error in nonzero comparison %zu:  %g != %g",
                   nz, J_local_matrix.values(nz), Jp_local_matrix.values(nz));
           errorcnt++;
         }
@@ -181,12 +181,10 @@ public:
    
 
     if (ierr > 0) {
-      if (me == 0) {
-        std::cout << testname << " FAILED with "
-                  << (useBlock ? "Block maps" : "Cyclic maps")
-                  << std::endl;
-        params.print();
-      }
+      std::cout << testname << " FAILED on rank " << me << " with "
+                << (useBlock ? "Block maps" : "Cyclic maps")
+                << std::endl;
+      params.print();
     }
 
     return (ierr == 0);

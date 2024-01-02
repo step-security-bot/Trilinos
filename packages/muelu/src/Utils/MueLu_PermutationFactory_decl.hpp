@@ -54,81 +54,70 @@
 #define MUELU_PERMUTATIONFACTORY_DECL_HPP_
 
 #include <Xpetra_Map_fwd.hpp>
-#include <Xpetra_StridedMap_fwd.hpp>
-#include <Xpetra_Vector_fwd.hpp>
-#include <Xpetra_VectorFactory_fwd.hpp>
 #include <Xpetra_Matrix_fwd.hpp>
-#include <Xpetra_CrsMatrixWrap_fwd.hpp>
-#include <Xpetra_Export_fwd.hpp>
-#include <Xpetra_ExportFactory_fwd.hpp>
-#include <Xpetra_Import_fwd.hpp>
-#include <Xpetra_ImportFactory_fwd.hpp>
 
 #include "MueLu_ConfigDefs.hpp"
 #include "MueLu_SingleLevelFactoryBase.hpp"
-#include "MueLu_Utilities_fwd.hpp"
 
 #include "MueLu_AlgebraicPermutationStrategy_fwd.hpp"
 #include "MueLu_LocalPermutationStrategy_fwd.hpp"
 
 namespace MueLu {
 
-  /*!
-    @class PermutationFactory class.
-    @brief factory generates a row- and column permutation operators P and Q such that
-    P*A*Q^T is a (hopefully) diagonal-dominant matrix.
-    It's meant to be used with PermutingSmoother.
-  */
+/*!
+  @class PermutationFactory class.
+  @brief factory generates a row- and column permutation operators P and Q such that
+  P*A*Q^T is a (hopefully) diagonal-dominant matrix.
+  It's meant to be used with PermutingSmoother.
+*/
 
-  template <class Scalar = DefaultScalar,
-            class LocalOrdinal = DefaultLocalOrdinal,
-            class GlobalOrdinal = DefaultGlobalOrdinal,
-            class Node = DefaultNode>
-  class PermutationFactory : public SingleLevelFactoryBase {
+template <class Scalar        = DefaultScalar,
+          class LocalOrdinal  = DefaultLocalOrdinal,
+          class GlobalOrdinal = DefaultGlobalOrdinal,
+          class Node          = DefaultNode>
+class PermutationFactory : public SingleLevelFactoryBase {
 #undef MUELU_PERMUTATIONFACTORY_SHORT
 #include "MueLu_UseShortNames.hpp"
 
-  public:
-    //! @name Constructors/Destructors.
-    //@{
+ public:
+  //! @name Constructors/Destructors.
+  //@{
 
-    //! Constructor.
-    PermutationFactory();
+  //! Constructor.
+  PermutationFactory();
 
-    //! Destructor.
-    virtual ~PermutationFactory();
+  //! Destructor.
+  virtual ~PermutationFactory();
 
-    //@}
+  //@}
 
-    RCP<const ParameterList> GetValidParameterList() const;
+  RCP<const ParameterList> GetValidParameterList() const;
 
-    //! @name Input
-    //@{
+  //! @name Input
+  //@{
 
-    /*! @brief Specifies the data that this class needs, and the factories that generate that data.
+  /*! @brief Specifies the data that this class needs, and the factories that generate that data.
 
-        If the Build method of this class requires some data, but the generating factory is not specified in DeclareInput, then this class
-        will fall back to the settings in FactoryManager.
-    */
-    void DeclareInput(Level &currentLevel) const;
+      If the Build method of this class requires some data, but the generating factory is not specified in DeclareInput, then this class
+      will fall back to the settings in FactoryManager.
+  */
+  void DeclareInput(Level &currentLevel) const;
 
-    //@}
+  //@}
 
-    //! @name Build methods.
-    //@{
+  //! @name Build methods.
+  //@{
 
-    //! Build an object with this factory.
-    void Build(Level & currentLevel) const;
+  //! Build an object with this factory.
+  void Build(Level &currentLevel) const;
 
-    //@}
+  //@}
 
-  private:
+ private:
+};  // class PermutationFactory
 
-  }; // class PermutationFactory
-
-} // namespace MueLu
+}  // namespace MueLu
 
 #define MUELU_PERMUTATIONFACTORY_SHORT
-
 
 #endif /* MUELU_PERMUTATIONFACTORY_DECL_HPP_ */

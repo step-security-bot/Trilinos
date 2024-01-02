@@ -240,6 +240,9 @@ Superlu<Matrix,Vector>::symbolicFactorization_impl()
    * This can be accomplished by setting the options.Fact flag to
    * DOFACT, as well as setting our own internal flag to false.
    */
+#ifdef HAVE_AMESOS2_TIMERS
+    Teuchos::TimeMonitor symFactTime( this->timers_.symFactTime_ );
+#endif
   same_symbolic_ = false;
   data_.options.Fact = SLU::DOFACT;
 
@@ -990,24 +993,14 @@ Superlu<Matrix,Vector>::loadA_impl(EPhase current_phase)
                         std::runtime_error,
                         "Row and column maps have different indexbase ");
 
-    if ( is_contiguous_ == true ) {
-      Util::get_ccs_helper_kokkos_view<
-        MatrixAdapter<Matrix>,host_value_type_array,host_ordinal_type_array,
-          host_size_type_array>::do_get(this->matrixA_.ptr(),
-            host_nzvals_view_, host_rows_view_,
-            host_col_ptr_view_, nnz_ret, ROOTED,
-            ARBITRARY,
-            this->rowIndexBase_);
-    }
-    else {
-      Util::get_ccs_helper_kokkos_view<
-        MatrixAdapter<Matrix>,host_value_type_array,host_ordinal_type_array,
-          host_size_type_array>::do_get(this->matrixA_.ptr(),
-            host_nzvals_view_, host_rows_view_,
-            host_col_ptr_view_, nnz_ret, CONTIGUOUS_AND_ROOTED,
-            ARBITRARY,
-            this->rowIndexBase_);
-    }
+    Util::get_ccs_helper_kokkos_view<
+      MatrixAdapter<Matrix>,host_value_type_array,host_ordinal_type_array,
+        host_size_type_array>::do_get(this->matrixA_.ptr(),
+          host_nzvals_view_, host_rows_view_,
+          host_col_ptr_view_, nnz_ret,
+          (is_contiguous_ == true) ? ROOTED : CONTIGUOUS_AND_ROOTED,
+          ARBITRARY,
+          this->rowIndexBase_);
   }
 
   // Get the SLU data type for this type of matrix

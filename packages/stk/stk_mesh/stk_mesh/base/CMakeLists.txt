@@ -32,29 +32,11 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 # 
 
-
-#
-# A) Package-specific configuration options
-#
-
-#
-# B) Define the header and source files (and directories)
-#
-
-#
-# src
-#
-
 SET(HEADERS "")
 SET(SOURCES "")
 
 SET(HEADERS_IMPL "")
 SET(SOURCES_IMPL "")
-
-INCLUDE_DIRECTORIES(${${PACKAGE_NAME}_SOURCE_DIR})
-#
-# Core headers
-#
 
 FILE(GLOB HEADERS *.hpp)
 FILE(GLOB SOURCES *.cpp)
@@ -65,22 +47,37 @@ FILE(GLOB SOURCES_IMPL ${CMAKE_CURRENT_SOURCE_DIR}/../baseImpl/*.cpp)
 FILE(GLOB HEADERS_ELEMGRAPH ${CMAKE_CURRENT_SOURCE_DIR}/../baseImpl/elementGraph/*.hpp)
 FILE(GLOB SOURCES_ELEMGRAPH ${CMAKE_CURRENT_SOURCE_DIR}/../baseImpl/elementGraph/*.cpp)
 
-#
-# C) Define the targets for package's library(s)
-#
-
-TRIBITS_ADD_LIBRARY(
-  stk_mesh_base
-  NOINSTALLHEADERS ${HEADERS} ${HEADERS_IMPL} ${HEADERS_ELEMGRAPH}
-  SOURCES ${SOURCES} ${SOURCES_IMPL} ${SOURCES_ELEMGRAPH}
+if(HAVE_STK_Trilinos)
+  TRIBITS_ADD_LIBRARY(stk_mesh_base
+    NOINSTALLHEADERS ${HEADERS} ${HEADERS_IMPL} ${HEADERS_ELEMGRAPH}
+    SOURCES ${SOURCES} ${SOURCES_IMPL} ${SOURCES_ELEMGRAPH}
   )
+else()
+  find_package(Shards REQUIRED)
+  find_package(BLAS REQUIRED)
+  add_library(stk_mesh_base ${SOURCES} ${SOURCES_IMPL} ${SOURCES_ELEMGRAPH})
+  target_link_libraries(stk_mesh_base ${Shards_LIBRARIES})
+  target_link_libraries(stk_mesh_base BLAS::BLAS)
+  target_link_libraries(stk_mesh_base stk_topology)
+  target_link_libraries(stk_mesh_base stk_util_diag)
+  target_link_libraries(stk_mesh_base stk_util_env)
+  target_link_libraries(stk_mesh_base stk_util_parallel)
+endif()
+
+target_include_directories(stk_mesh_base PUBLIC
+  $<BUILD_INTERFACE:${STK_TOPLEVEL_SOURCE_DIR}/stk_mesh>
+  $<INSTALL_INTERFACE:include>
+)
 
 INSTALL(FILES ${HEADERS} DESTINATION
-    ${CMAKE_INSTALL_PREFIX}/${${PROJECT_NAME}_INSTALL_INCLUDE_DIR}/stk_mesh/base/)
+    ${${PROJECT_NAME}_INSTALL_INCLUDE_DIR}/stk_mesh/base/)
 
 INSTALL(FILES ${HEADERS_IMPL} DESTINATION
-    ${CMAKE_INSTALL_PREFIX}/${${PROJECT_NAME}_INSTALL_INCLUDE_DIR}/stk_mesh/baseImpl/)
+    ${${PROJECT_NAME}_INSTALL_INCLUDE_DIR}/stk_mesh/baseImpl/)
 
 INSTALL(FILES ${HEADERS_ELEMGRAPH} DESTINATION
-    ${CMAKE_INSTALL_PREFIX}/${${PROJECT_NAME}_INSTALL_INCLUDE_DIR}/stk_mesh/baseImpl/elementGraph)
+    ${${PROJECT_NAME}_INSTALL_INCLUDE_DIR}/stk_mesh/baseImpl/elementGraph)
 
+if(NOT HAVE_STK_Trilinos)
+  INSTALL(TARGETS stk_mesh_base DESTINATION ${STK_INSTALL_LIBDIR})
+endif()

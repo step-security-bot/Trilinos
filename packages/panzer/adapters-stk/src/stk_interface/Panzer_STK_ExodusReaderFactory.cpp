@@ -42,6 +42,8 @@
 
 
 #include <Teuchos_TimeMonitor.hpp>
+#include <Teuchos_RCP.hpp>
+#include <Teuchos_RCPStdSharedPtrConversions.hpp>
 #include <PanzerAdaptersSTK_config.hpp>
 
 #include "Panzer_STK_ExodusReaderFactory.hpp"
@@ -72,10 +74,11 @@ int getMeshDimension(const std::string & meshStr,
                      const std::string & typeStr)
 {
   stk::io::StkMeshIoBroker meshData(parallelMach);
+  meshData.use_simple_fields();
   meshData.property_add(Ioss::Property("LOWER_CASE_VARIABLE_NAMES", false));
   meshData.add_mesh_database(meshStr, fileTypeToIOSSType(typeStr), stk::io::READ_MESH);
   meshData.create_input_mesh();
-  return Teuchos::as<int>(meshData.meta_data_rcp()->spatial_dimension());
+  return Teuchos::as<int>(meshData.meta_data_ptr()->spatial_dimension());
 }
 
 std::string fileTypeToIOSSType(const std::string & fileType)
@@ -140,6 +143,7 @@ Teuchos::RCP<STK_Interface> STK_ExodusReaderFactory::buildUncommitedMesh(stk::Pa
 
    // read in meta data
    stk::io::StkMeshIoBroker* meshData = new stk::io::StkMeshIoBroker(parallelMach);
+   meshData->use_simple_fields();
    meshData->property_add(Ioss::Property("LOWER_CASE_VARIABLE_NAMES", false));
 
    // add in "FAMILY_TREE" entity for doing refinement
@@ -158,12 +162,12 @@ Teuchos::RCP<STK_Interface> STK_ExodusReaderFactory::buildUncommitedMesh(stk::Pa
    meshData->add_mesh_database(fileName_, fileTypeToIOSSType(fileType_), stk::io::READ_MESH);
 
    meshData->create_input_mesh();
-   RCP<stk::mesh::MetaData> metaData = meshData->meta_data_rcp();
+   RCP<stk::mesh::MetaData> metaData = Teuchos::rcp(meshData->meta_data_ptr());
 
    RCP<STK_Interface> mesh = rcp(new STK_Interface(metaData));
    mesh->initializeFromMetaData();
    mesh->instantiateBulkData(parallelMach);
-   meshData->set_bulk_data(mesh->getBulkData());
+   meshData->set_bulk_data(Teuchos::get_shared_ptr(mesh->getBulkData()));
 
    // read in other transient fields, these will be useful later when
    // trying to read other fields for use in solve
@@ -188,6 +192,7 @@ Teuchos::RCP<STK_Interface> STK_ExodusReaderFactory::buildUncommitedMesh(stk::Pa
    buildMetaData(parallelMach, *mesh);
 
    mesh->addPeriodicBCs(periodicBCVec_);
+   mesh->setBoundingBoxSearchFlag(useBBoxSearch_);
 
    return mesh;
 }
@@ -227,8 +232,7 @@ void STK_ExodusReaderFactory::completeMeshConstruction(STK_Interface & mesh,stk:
    // turned on from the input file.
    if (userMeshScaling_)
    {
-     stk::mesh::Field<double,stk::mesh::Cartesian>* coord_field =
-       metaData.get_field<stk::mesh::Field<double, stk::mesh::Cartesian> >(stk::topology::NODE_RANK, "coordinates");
+     stk::mesh::Field<double>* coord_field = metaData.get_field<double>(stk::topology::NODE_RANK, "coordinates");
 
      stk::mesh::Selector select_all_local = metaData.locally_owned_part() | metaData.globally_shared_part();
      stk::mesh::BucketVector const& my_node_buckets = bulkData.get_buckets(stk::topology::NODE_RANK, select_all_local);
@@ -254,7 +258,7 @@ void STK_ExodusReaderFactory::completeMeshConstruction(STK_Interface & mesh,stk:
    // (-1 is the last time step)
    int restartIndex = restartIndex_;
    if(restartIndex<0) {
-     std::pair<int,double> lastTimeStep = meshData->get_input_io_region()->get_max_time();
+     std::pair<int,double> lastTimeStep = meshData->get_input_ioss_region()->get_max_time();
      restartIndex = 1+restartIndex+lastTimeStep.first;
    }
 
@@ -276,8 +280,7 @@ void STK_ExodusReaderFactory::completeMeshConstruction(STK_Interface & mesh,stk:
    mesh.endModification();
 
    if (userMeshScaling_) {
-     stk::mesh::Field<double,stk::mesh::Cartesian>* coord_field =
-       metaData.get_field<stk::mesh::Field<double, stk::mesh::Cartesian> >(stk::topology::NODE_RANK, "coordinates");
+     stk::mesh::Field<double>* coord_field = metaData.get_field<double>(stk::topology::NODE_RANK, "coordinates");
      std::vector< const stk::mesh::FieldBase *> fields;
      fields.push_back(coord_field);
 
@@ -285,7 +288,7 @@ void STK_ExodusReaderFactory::completeMeshConstruction(STK_Interface & mesh,stk:
    }
 
    if(restartIndex>0) // process_input_request is a no-op if restartIndex<=0 ... thus there would be no inital time
-      mesh.setInitialStateTime(meshData->get_input_io_region()->get_state_time(restartIndex));
+      mesh.setInitialStateTime(meshData->get_input_ioss_region()->get_state_time(restartIndex));
    else
       mesh.setInitialStateTime(0.0); // no initial time to speak, might as well use 0.0
 
@@ -372,7 +375,7 @@ void STK_ExodusReaderFactory::setParameterList(const Teuchos::RCP<Teuchos::Param
    }
 
    // read in periodic boundary conditions
-   parsePeriodicBCList(Teuchos::rcpFromRef(paramList->sublist("Periodic BCs")),periodicBCVec_);
+   parsePeriodicBCList(Teuchos::rcpFromRef(paramList->sublist("Periodic BCs")),periodicBCVec_,useBBoxSearch_);
 
    keepPerceptData_ = paramList->get<bool>("Keep Percept Data");
 
@@ -443,7 +446,7 @@ void STK_ExodusReaderFactory::registerElementBlocks(STK_Interface & mesh,stk::io
    // here we use the Ioss interface because they don't add
    // "bonus" element blocks and its easier to determine
    // "real" element blocks versus STK-only blocks
-   const Ioss::ElementBlockContainer & elem_blocks = meshData.get_input_io_region()->get_element_blocks();
+   const Ioss::ElementBlockContainer & elem_blocks = meshData.get_input_ioss_region()->get_element_blocks();
    for(Ioss::ElementBlockContainer::const_iterator itr=elem_blocks.begin();itr!=elem_blocks.end();++itr) {
       Ioss::GroupingEntity * entity = *itr;
       const std::string & name = entity->name();
@@ -543,7 +546,7 @@ void STK_ExodusReaderFactory::registerEdgeBlocks(STK_Interface & mesh,stk::io::S
     * This will add the edge block as a subset of the element
     * block in the STK mesh.
     */
-   const Ioss::EdgeBlockContainer & edge_blocks = meshData.get_input_io_region()->get_edge_blocks();
+   const Ioss::EdgeBlockContainer & edge_blocks = meshData.get_input_ioss_region()->get_edge_blocks();
    for(Ioss::EdgeBlockContainer::const_iterator ebc_iter=edge_blocks.begin();ebc_iter!=edge_blocks.end();++ebc_iter) {
       Ioss::GroupingEntity * entity = *ebc_iter;
       const stk::mesh::Part * edgeBlockPart = metaData->get_part(entity->name());
@@ -573,7 +576,7 @@ void STK_ExodusReaderFactory::registerFaceBlocks(STK_Interface & mesh,stk::io::S
     * This will add the face block as a subset of the element
     * block in the STK mesh.
     */
-   const Ioss::FaceBlockContainer & face_blocks = meshData.get_input_io_region()->get_face_blocks();
+   const Ioss::FaceBlockContainer & face_blocks = meshData.get_input_ioss_region()->get_face_blocks();
    for(Ioss::FaceBlockContainer::const_iterator fbc_itr=face_blocks.begin();fbc_itr!=face_blocks.end();++fbc_itr) {
       Ioss::GroupingEntity * entity = *fbc_itr;
       const stk::mesh::Part * faceBlockPart = metaData->get_part(entity->name());

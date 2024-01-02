@@ -87,7 +87,7 @@ class StatusTestGenResSubNorm: public StatusTestResNorm<ScalarType,MV,OP> {
     of the initial residual.  The least costly form of the 2-norm depends on the chosen iterative
     method.
 
-    @param Tolerance: Specifies tolerance \f$\tau\f
+    @param Tolerance: Specifies tolerance \f$\tau\f$
     @param subIdx: index of block row in the n x n block system we want to check the residual of
     @param quorum: Number of residual (sub-)vectors which are needed to be within the tolerance before check is considered to be passed
     @param showMaxResNormOnly: for output only
@@ -661,14 +661,14 @@ class StatusTestGenResSubNorm<ScalarType,Thyra::MultiVectorBase<ScalarType>,Thyr
         numrhs_ = MVT::GetNumberVecs( *init_res );
         scalevector_.resize( numrhs_ );
         MVT::MvNorm( *init_res, scalevector_, scalenormtype_ );
-        scalevalue_ = Teuchos::ScalarTraits<ScalarType>::one();
+        scalevalue_ = Teuchos::ScalarTraits<MagnitudeType>::one();
       }
       else if (scaletype_==NormOfFullPrecInitRes) {
         Teuchos::RCP<const MV> init_res = lp.getInitPrecResVec();
         numrhs_ = MVT::GetNumberVecs( *init_res );
         scalevector_.resize( numrhs_ );
         MVT::MvNorm( *init_res, scalevector_, scalenormtype_ );
-        scalevalue_ = Teuchos::ScalarTraits<ScalarType>::one();
+        scalevalue_ = Teuchos::ScalarTraits<MagnitudeType>::one();
       }
       else if (scaletype_==NormOfFullScaledInitRes) {
         Teuchos::RCP<const MV> init_res = lp.getInitResVec();

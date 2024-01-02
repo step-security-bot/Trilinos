@@ -46,18 +46,13 @@
 #ifndef MUELU_UNCOUPLEDAGGREGATIONFACTORY_KOKKOS_FWD_HPP
 #define MUELU_UNCOUPLEDAGGREGATIONFACTORY_KOKKOS_FWD_HPP
 
-#include "MueLu_ConfigDefs.hpp"
-#if defined(HAVE_MUELU_KOKKOS_REFACTOR)
-
 namespace MueLu {
-  template <class LocalOrdinal, class GlobalOrdinal, class Node>
-  class UncoupledAggregationFactory_kokkos;
+template <class LocalOrdinal, class GlobalOrdinal, class Node>
+class UncoupledAggregationFactory_kokkos;
 }
 
 #ifndef MUELU_UNCOUPLEDAGGREGATIONFACTORY_KOKKOS_SHORT
 #define MUELU_UNCOUPLEDAGGREGATIONFACTORY_KOKKOS_SHORT
 #endif
 
-#endif
-
-#endif // MUELU_UNCOUPLEDAGGREGATIONFACTORY_KOKKOS_FWD_HPP
+#endif  // MUELU_UNCOUPLEDAGGREGATIONFACTORY_KOKKOS_FWD_HPP

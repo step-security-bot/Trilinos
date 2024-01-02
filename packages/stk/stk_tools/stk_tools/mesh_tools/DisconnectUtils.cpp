@@ -46,20 +46,23 @@ namespace impl {
 
 bool is_block(const stk::mesh::BulkData & bulk, stk::mesh::Part & part)
 {
-  const bool isElementPart = (part.primary_entity_rank() == stk::topology::ELEM_RANK);
-  const bool isIoPart      = stk::io::has_io_part_attribute(part);
-  return (isElementPart && isIoPart);
+  return ((part.primary_entity_rank() == stk::topology::ELEM_RANK) && stk::io::has_io_part_attribute(part));
 }
 
-stk::mesh::Part* get_block_part_for_element(const stk::mesh::BulkData & bulk, stk::mesh::Entity element)
+stk::mesh::Part* get_block_part_for_bucket(const stk::mesh::BulkData & bulk, const stk::mesh::Bucket& bucket)
 {
-  const stk::mesh::PartVector & elementParts = bulk.bucket(element).supersets();
+  const stk::mesh::PartVector & elementParts = bucket.supersets();
   for (stk::mesh::Part * part : elementParts) {
     if (is_block(bulk, *part)) {
       return part;
     }
   }
   return nullptr;
+}
+
+stk::mesh::Part* get_block_part_for_element(const stk::mesh::BulkData & bulk, stk::mesh::Entity element)
+{
+  return get_block_part_for_bucket(bulk, bulk.bucket(element));
 }
 
 int get_block_id_for_element(const stk::mesh::BulkData & bulk, stk::mesh::Entity element)
@@ -78,17 +81,21 @@ void fill_block_membership(const stk::mesh::BulkData& bulk, stk::mesh::Entity no
   const unsigned numElems = bulk.num_elements(node);
   const stk::mesh::Entity* elements = bulk.begin_elements(node);
 
+  stk::mesh::Part* prevBlock = nullptr;
   for(unsigned i=0; i<numElems; ++i) {
     stk::mesh::Part* block = get_block_part_for_element(bulk, elements[i]);
-    ThrowRequire(block != nullptr);
-    stk::util::insert_keep_sorted_and_unique(block, members, stk::mesh::PartLess());
+    STK_ThrowRequire(block != nullptr);
+    if (block != prevBlock) {
+      stk::util::insert_keep_sorted_and_unique(block, members, stk::mesh::PartLess());
+      prevBlock = block;
+    }
   }
 }
 
 BlockPair get_block_pair(stk::mesh::Part* block1, stk::mesh::Part* block2)
 {
-  ThrowRequire(nullptr != block1 && nullptr != block2);
-  ThrowRequire(block1 != block2);
+  STK_ThrowRequire(nullptr != block1 && nullptr != block2);
+  STK_ThrowRequire(block1 != block2);
 
   if(block2->mesh_meta_data_ordinal() > block1->mesh_meta_data_ordinal()) {
     return BlockPair(block1, block2);
@@ -148,7 +155,7 @@ stk::tools::BlockPairVector get_local_reconnect_list(const stk::mesh::BulkData& 
   for(const stk::tools::BlockPair& blockPair : disconnectList) {
     const stk::mesh::Part & firstBlock  = *blockPair.first;
     const stk::mesh::Part & secondBlock = *blockPair.second;
-    ThrowAssert(secondBlock.mesh_meta_data_ordinal() > firstBlock.mesh_meta_data_ordinal());
+    STK_ThrowAssert(secondBlock.mesh_meta_data_ordinal() > firstBlock.mesh_meta_data_ordinal());
 
     stk::mesh::Selector boundaryBetweenBlocks = firstBlock & secondBlock & (meta.locally_owned_part() | meta.globally_shared_part());
 
@@ -164,11 +171,11 @@ stk::tools::BlockPairVector get_local_reconnect_list(const stk::mesh::BulkData& 
 
   for(const stk::tools::BlockPair& disconnectPair : disconnectList) {
     auto it = std::find_if(reconnectList.begin(), reconnectList.end(),
-        [disconnectPair](const stk::tools::BlockPair& lhs)
-                        {
-                         return (lhs.first->mesh_meta_data_ordinal() == disconnectPair.first->mesh_meta_data_ordinal() &&
-                                 lhs.second->mesh_meta_data_ordinal() == disconnectPair.second->mesh_meta_data_ordinal());
-                        }
+                           [disconnectPair](const stk::tools::BlockPair& lhs)
+    {
+      return (lhs.first->mesh_meta_data_ordinal() == disconnectPair.first->mesh_meta_data_ordinal() &&
+              lhs.second->mesh_meta_data_ordinal() == disconnectPair.second->mesh_meta_data_ordinal());
+    }
     );
 
     if(it != reconnectList.end()) {

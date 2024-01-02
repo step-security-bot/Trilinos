@@ -1,5 +1,5 @@
 /*
- * Copyright(C) 1999-2021 National Technology & Engineering Solutions
+ * Copyright(C) 1999-2023 National Technology & Engineering Solutions
  * of Sandia, LLC (NTESS).  Under the terms of Contract DE-NA0003525 with
  * NTESS, the U.S. Government retains certain rights in this software.
  *
@@ -11,9 +11,7 @@
  * exodusII.h - Exodus II API include file
  *
  *****************************************************************************/
-
-#ifndef EXODUSII_H
-#define EXODUSII_H
+#pragma once
 
 #include "exodus_config.h"
 
@@ -54,12 +52,12 @@
 #endif
 
 /* EXODUS version number */
-#define EXODUS_VERSION       "8.14"
+#define EXODUS_VERSION       "8.23"
 #define EXODUS_VERSION_MAJOR 8
-#define EXODUS_VERSION_MINOR 14
-#define EXODUS_RELEASE_DATE  "December 2, 2021"
+#define EXODUS_VERSION_MINOR 23
+#define EXODUS_RELEASE_DATE  "July 13, 2023"
 
-#define EX_API_VERS       8.14f
+#define EX_API_VERS       8.23f
 #define EX_API_VERS_NODOT (100 * EXODUS_VERSION_MAJOR + EXODUS_VERSION_MINOR)
 #define EX_VERS           EX_API_VERS
 
@@ -371,7 +369,7 @@ typedef struct ex_attribute
 {
   ex_entity_type entity_type;
   int64_t        entity_id;
-  char           name[NC_MAX_NAME];
+  char           name[NC_MAX_NAME + 1];
   ex_type        type; /* int, double, text */
   size_t         value_count;
   void          *values; /* not accessed if NULL */
@@ -490,26 +488,26 @@ EXODUS_EXPORT int ex_copy_transient(int in_exoid, int out_exoid);
 #define ex_create(path, mode, comp_ws, io_ws)                                                      \
   ex_create_int(path, mode, comp_ws, io_ws, EX_API_VERS_NODOT)
 
-EXODUS_EXPORT int ex_create_int(const char *path, int cmode, int *comp_ws, int *io_ws,
+EXODUS_EXPORT int ex_create_int(const char *rel_path, int cmode, int *comp_ws, int *io_ws,
                                 int run_version);
 
 #define ex_open(path, mode, comp_ws, io_ws, version)                                               \
   ex_open_int(path, mode, comp_ws, io_ws, version, EX_API_VERS_NODOT)
 
-EXODUS_EXPORT int ex_open_int(const char *path, int mode, int *comp_ws, int *io_ws, float *version,
-                              int run_version);
+EXODUS_EXPORT int ex_open_int(const char *rel_path, int mode, int *comp_ws, int *io_ws,
+                              float *version, int run_version);
 
 #if defined(PARALLEL_AWARE_EXODUS)
 #define ex_create_par(path, mode, comp_ws, io_ws, comm, info)                                      \
   ex_create_par_int(path, mode, comp_ws, io_ws, comm, info, EX_API_VERS_NODOT)
 
-EXODUS_EXPORT int ex_create_par_int(const char *path, int cmode, int *comp_ws, int *io_ws,
+EXODUS_EXPORT int ex_create_par_int(const char *rel_path, int cmode, int *comp_ws, int *io_ws,
                                     MPI_Comm comm, MPI_Info info, int my_version);
 
 #define ex_open_par(path, mode, comp_ws, io_ws, version, comm, info)                               \
   ex_open_par_int(path, mode, comp_ws, io_ws, version, comm, info, EX_API_VERS_NODOT)
 
-EXODUS_EXPORT int ex_open_par_int(const char *path, int mode, int *comp_ws, int *io_ws,
+EXODUS_EXPORT int ex_open_par_int(const char *rel_path, int mode, int *comp_ws, int *io_ws,
                                   float *version, MPI_Comm comm, MPI_Info info, int my_version);
 #endif
 
@@ -810,6 +808,9 @@ EXODUS_EXPORT int ex_get_id_map(int exoid, ex_entity_type map_type, void_int *ma
 EXODUS_EXPORT int ex_get_partial_id_map(int exoid, ex_entity_type map_type,
                                         int64_t start_entity_num, int64_t num_entities,
                                         void_int *map);
+
+EXODUS_EXPORT int ex_get_block_id_map(int exoid, ex_entity_type map_type, ex_entity_id entity_id,
+                                      void_int *map);
 
 EXODUS_EXPORT int ex_put_coordinate_frames(int exoid, int nframes, const void_int *cf_ids,
                                            const void *pt_coordinates, const char *tags);
@@ -1809,6 +1810,7 @@ EXODUS_EXPORT int ex_get_idx(int         exoid,       /**< NetCDF/Exodus file ID
 #define EX_INTERNAL      1006  /**< internal logic error                     */
 #define EX_DUPLICATEID   1007  /**< duplicate id found                       */
 #define EX_DUPLICATEOPEN 1008  /**< duplicate open                           */
+#define EX_BADFILENAME   1009  /**< empty or null filename specified         */
 #define EX_MSG           -1000 /**< message print code - no error implied    */
 #define EX_PRTLASTMSG    -1001 /**< print last error message msg code        */
 #define EX_NOTROOTID     -1002 /**< file id is not the root id; it is a subgroup id */
@@ -1824,6 +1826,4 @@ EXODUS_EXPORT int ex_get_idx(int         exoid,       /**< NetCDF/Exodus file ID
 
 #ifdef __cplusplus
 } /* close brackets on extern "C" declaration */
-#endif
-
 #endif

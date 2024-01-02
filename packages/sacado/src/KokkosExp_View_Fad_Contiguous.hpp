@@ -31,7 +31,7 @@
 #define KOKKOS_EXPERIMENTAL_VIEW_SACADO_FAD_CONTIGUOUS_HPP
 
 #include "Sacado_ConfigDefs.h"
-#if defined(HAVE_SACADO_KOKKOSCORE)
+#if defined(HAVE_SACADO_KOKKOS)
 
 #include "Kokkos_LayoutContiguous.hpp"
 
@@ -346,7 +346,6 @@ struct SacadoViewFill<
     const size_t n4 = output.extent(4);
     const size_t n5 = output.extent(5);
     const size_t n6 = output.extent(6);
-    const size_t n7 = output.extent(7);
 
     for ( size_t i1 = 0 ; i1 < n1 ; ++i1 ) {
     for ( size_t i2 = 0 ; i2 < n2 ; ++i2 ) {
@@ -354,9 +353,8 @@ struct SacadoViewFill<
     for ( size_t i4 = 0 ; i4 < n4 ; ++i4 ) {
     for ( size_t i5 = 0 ; i5 < n5 ; ++i5 ) {
     for ( size_t i6 = 0 ; i6 < n6 ; ++i6 ) {
-    for ( size_t i7 = 0 ; i7 < n7 ; ++i7 ) {
-      output.access(i0,i1,i2,i3,i4,i5,i6,i7) = input_stride ;
-    }}}}}}}
+      output.access(i0,i1,i2,i3,i4,i5,i6) = input_stride ;
+    }}}}}}
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -384,7 +382,7 @@ struct SacadoViewFill<
   OutputView,
   typename std::enable_if<
     ( Kokkos::is_view_fad_contiguous<OutputView>::value &&
-      std::is_same<typename OutputView::execution_space, Kokkos::Experimental::HIP>::value &&
+      std::is_same<typename OutputView::execution_space, Kokkos::HIP>::value &&
       !Kokkos::ViewScalarStride<OutputView>::is_unit_stride )
     >::type
   >
@@ -418,9 +416,8 @@ struct SacadoViewFill<
     for ( size_t i4 = 0 ; i4 < n4 ; ++i4 ) {
     for ( size_t i5 = 0 ; i5 < n5 ; ++i5 ) {
     for ( size_t i6 = 0 ; i6 < n6 ; ++i6 ) {
-    for ( size_t i7 = 0 ; i7 < n7 ; ++i7 ) {
-      output.access(i0,i1,i2,i3,i4,i5,i6,i7) = input_stride ;
-    }}}}}}}
+      output.access(i0,i1,i2,i3,i4,i5,i6) = input_stride ;
+    }}}}}}
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -614,7 +611,7 @@ public:
   typedef typename std::conditional< std::is_same<typename Traits::execution_space, Kokkos::Cuda>::value, strided_scalar_type, fad_type >::type thread_local_scalar_type;
 #elif defined(KOKKOS_ENABLE_HIP)
   typedef typename Sacado::LocalScalarType< fad_type, unsigned(PartitionedFadStride) >::type strided_scalar_type;
-  typedef typename std::conditional< std::is_same<typename Traits::execution_space, Kokkos::Experimental::HIP>::value, strided_scalar_type, fad_type >::type thread_local_scalar_type;
+  typedef typename std::conditional< std::is_same<typename Traits::execution_space, Kokkos::HIP>::value, strided_scalar_type, fad_type >::type thread_local_scalar_type;
 #else
   typedef fad_type thread_local_scalar_type;
 #endif
@@ -1133,7 +1130,8 @@ public:
   template< class ... P >
   SharedAllocationRecord<> *
   allocate_shared( ViewCtorProp< P... > const & prop
-                 , typename Traits::array_layout const & local_layout )
+                 , typename Traits::array_layout const & local_layout
+                 , bool execution_space_specified)
   {
     typedef ViewCtorProp< P... > ctor_prop ;
 
@@ -1184,11 +1182,17 @@ public:
       if ( ctor_prop::initialize ) {
         // Assume destruction is only required when construction is requested.
         // The ViewValueFunctor has both value construction and destruction operators.
-        record->m_destroy = functor_type( ( (ViewCtorProp<void,execution_space> const &) prop).value
-                                        , (fad_value_type *) m_impl_handle
-                                        , m_array_offset.span()
-                                        , record->get_label()
-                                        );
+        if (execution_space_specified)
+          record->m_destroy = functor_type( ( (ViewCtorProp<void,execution_space> const &) prop).value
+                                          , (fad_value_type *) m_impl_handle
+                                          , m_array_offset.span()
+                                          , record->get_label()
+                                          );
+        else
+          record->m_destroy = functor_type((fad_value_type *) m_impl_handle
+                                          , m_array_offset.span()
+                                          , record->get_label()
+                                          );
 
         // Construct values
         record->m_destroy.construct_shared_allocation();
@@ -1635,13 +1639,13 @@ private:
       ( /* Same array layout IF */
         ( rank == 0 ) /* output rank zero */
         ||
-        // OutputRank 1 or 2, InputLayout Left, Interval 0
-        // because single stride one or second index has a stride.
-        ( rank <= 2 && R0 && std::is_same< typename SrcTraits::array_layout , Kokkos::LayoutLeft >::value )
+        // OutputRank 1, InputLayout Left, Interval 0
+        // because single stride one
+        ( rank <= 1 && R0 && std::is_same< typename SrcTraits::array_layout , Kokkos::LayoutLeft >::value )
         ||
-        // OutputRank 1 or 2, InputLayout Right, Interval [InputRank-1]
-        // because single stride one or second index has a stride.
-        ( rank <= 2 && R0_rev && std::is_same< typename SrcTraits::array_layout , Kokkos::LayoutRight >::value )
+        // OutputRank 1, InputLayout Right, Interval [InputRank-1]
+        // because single stride one
+        ( rank <= 1 && R0_rev && std::is_same< typename SrcTraits::array_layout , Kokkos::LayoutRight >::value )
         ), typename SrcTraits::array_layout , Kokkos::LayoutContiguous<Kokkos::LayoutStride,SrcTraits::array_layout::scalar_stride>
       >::type array_layout ;
 
@@ -1695,8 +1699,35 @@ public:
                                    , array_extents.domain_offset(5)
                                    , array_extents.domain_offset(6)
                                    , array_extents.domain_offset(7) );
-        dst.m_array_offset = dst_array_offset_type( src.m_array_offset ,
-                                                    array_extents );
+        dst_array_offset_type dst_array_offset( src.m_array_offset ,
+                                                array_extents );
+        // For LayoutStride, we always use LayoutRight indexing (because we
+        // don't know whether the original array was Left or Right), so we
+        // need to swap the Fad dimension to the last and shift all of the
+        // other dimensions left by 1
+        if constexpr(std::is_same<typename traits_type::array_layout, LayoutStride>::value)
+        {
+          Kokkos::LayoutStride ls(
+            dst_array_offset.m_dim.N0, dst_array_offset.m_stride.S0,
+            dst_array_offset.m_dim.N1, dst_array_offset.m_stride.S1,
+            dst_array_offset.m_dim.N2, dst_array_offset.m_stride.S2,
+            dst_array_offset.m_dim.N3, dst_array_offset.m_stride.S3,
+            dst_array_offset.m_dim.N4, dst_array_offset.m_stride.S4,
+            dst_array_offset.m_dim.N5, dst_array_offset.m_stride.S5,
+            dst_array_offset.m_dim.N6, dst_array_offset.m_stride.S6,
+            dst_array_offset.m_dim.N7, dst_array_offset.m_stride.S7);
+          auto t1 = ls.dimension[0];
+          for (unsigned i=0; i<rank; ++i)
+            ls.dimension[i] = ls.dimension[i+1];
+          ls.dimension[rank] = t1;
+          auto t2 = ls.stride[0];
+          for (unsigned i=0; i<rank; ++i)
+            ls.stride[i] = ls.stride[i+1];
+          ls.stride[rank] = t2;
+          dst.m_array_offset = dst_array_offset_type(std::integral_constant<unsigned, 0>(), ls);
+        }
+        else
+          dst.m_array_offset = dst_array_offset;
       }
       else {
         const SubviewExtents< SrcTraits::rank + 1 , rank + 1 >
@@ -1792,6 +1823,6 @@ public:
 
 #endif // defined(HAVE_SACADO_VIEW_SPEC) && !defined(SACADO_DISABLE_FAD_VIEW_SPEC)
 
-#endif // defined(HAVE_SACADO_KOKKOSCORE)
+#endif // defined(HAVE_SACADO_KOKKOS)
 
 #endif /* #ifndef KOKKOS_EXPERIMENTAL_VIEW_SACADO_FAD_HPP */

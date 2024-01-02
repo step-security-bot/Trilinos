@@ -32,26 +32,11 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 # 
 
-
-#
-# A) Package-specific configuration options
-#
-
-#
-# B) Define the header and source files (and directories)
-#
-
-#
-# src
-#
-
 SET(HEADERS "")
 SET(SOURCES "")
 
 SET(HEADERS_IMPL "")
 SET(SOURCES_IMPL "")
-
-INCLUDE_DIRECTORIES(${${PACKAGE_NAME}_SOURCE_DIR})
 
 #
 # Core headers
@@ -84,41 +69,58 @@ FILE(GLOB SOURCES_MAIN ${CMAKE_CURRENT_SOURCE_DIR}/balance_main/*.cpp)
 
 FILE(GLOB SOURCES_M2N_MAIN ${CMAKE_CURRENT_SOURCE_DIR}/m2n_main/*.cpp)
 
-IF (TPL_ENABLE_MPI)
-ENDIF()
-
-#
-# C) Define the targets for package's library(s)
-#
-
-TRIBITS_ADD_LIBRARY(
-  stk_balance_lib
-  NOINSTALLHEADERS ${HEADERS} ${HEADERS_INTERNAL} ${HEADERS_M2N} ${HEADERS_SETUP} ${HEADERS_SEARCH_TOLERANCE} ${HEADERS_SEARCH_TOLERANCE_ALGS}
-  SOURCES ${SOURCES} ${SOURCES_INTERNAL} ${SOURCES_M2N} ${SOURCES_SETUP} ${SOURCES_SEARCH_TOLERANCE_ALGS}
+if(HAVE_STK_Trilinos)
+  TRIBITS_ADD_LIBRARY(stk_balance_lib
+    NOINSTALLHEADERS ${HEADERS} ${HEADERS_INTERNAL} ${HEADERS_M2N} ${HEADERS_SETUP} ${HEADERS_SEARCH_TOLERANCE} ${HEADERS_SEARCH_TOLERANCE_ALGS}
+    SOURCES ${SOURCES} ${SOURCES_INTERNAL} ${SOURCES_M2N} ${SOURCES_SETUP} ${SOURCES_SEARCH_TOLERANCE_ALGS}
   )
 
-TRIBITS_ADD_EXECUTABLE(
-    stk_balance
+  TRIBITS_ADD_EXECUTABLE(stk_balance
     SOURCES ${SOURCES_MAIN}
     NOEXEPREFIX INSTALLABLE
-    )
+  )
 
-TRIBITS_ADD_EXECUTABLE(
-    stk_balance_m2n
+  TRIBITS_ADD_EXECUTABLE(stk_balance_m2n
     SOURCES ${SOURCES_M2N_MAIN}
     NOEXEPREFIX INSTALLABLE
-    )
+  )
+else()
+  find_package(Zoltan2Core REQUIRED)
+
+  add_library(stk_balance_lib ${SOURCES} ${SOURCES_INTERNAL} ${SOURCES_M2N} ${SOURCES_SETUP} ${SOURCES_SEARCH_TOLERANCE_ALGS})
+  target_link_libraries(stk_balance_lib PUBLIC stk_io)
+  target_link_libraries(stk_balance_lib PUBLIC stk_tools_lib)
+  target_link_libraries(stk_balance_lib PUBLIC stk_util_registry)
+  target_link_libraries(stk_balance_lib PUBLIC stk_util_command_line)
+  target_link_libraries(stk_balance_lib PUBLIC ${Zoltan2Core_LIBRARIES})
+
+  add_executable(stk_balance ${SOURCES_MAIN})
+  add_executable(stk_balance_m2n ${SOURCES_M2N_MAIN})
+
+  target_link_libraries(stk_balance PUBLIC stk_balance_lib)
+  target_link_libraries(stk_balance_m2n PUBLIC stk_balance_lib)
+endif()
+
+target_include_directories(stk_balance_lib PUBLIC
+  $<BUILD_INTERFACE:${STK_TOPLEVEL_SOURCE_DIR}/stk_balance>
+  $<INSTALL_INTERFACE:include>
+)
 
 INSTALL(FILES ${HEADERS} DESTINATION
-    ${CMAKE_INSTALL_PREFIX}/${${PROJECT_NAME}_INSTALL_INCLUDE_DIR}/stk_balance)
+    ${${PROJECT_NAME}_INSTALL_INCLUDE_DIR}/stk_balance)
 INSTALL(FILES ${HEADERS_INTERNAL} DESTINATION
-    ${CMAKE_INSTALL_PREFIX}/${${PROJECT_NAME}_INSTALL_INCLUDE_DIR}/stk_balance/internal)
+    ${${PROJECT_NAME}_INSTALL_INCLUDE_DIR}/stk_balance/internal)
 INSTALL(FILES ${HEADERS_M2N} DESTINATION
-    ${CMAKE_INSTALL_PREFIX}/${${PROJECT_NAME}_INSTALL_INCLUDE_DIR}/stk_balance/m2n)
+    ${${PROJECT_NAME}_INSTALL_INCLUDE_DIR}/stk_balance/m2n)
 INSTALL(FILES ${HEADERS_SETUP} DESTINATION
-    ${CMAKE_INSTALL_PREFIX}/${${PROJECT_NAME}_INSTALL_INCLUDE_DIR}/stk_balance/setup)
+    ${${PROJECT_NAME}_INSTALL_INCLUDE_DIR}/stk_balance/setup)
 INSTALL(FILES ${HEADERS_SEARCH_TOLERANCE} DESTINATION
-    ${CMAKE_INSTALL_PREFIX}/${${PROJECT_NAME}_INSTALL_INCLUDE_DIR}/stk_balance/search_tolerance)
+    ${${PROJECT_NAME}_INSTALL_INCLUDE_DIR}/stk_balance/search_tolerance)
 INSTALL(FILES ${HEADERS_SEARCH_TOLERANCE_ALGS} DESTINATION
-    ${CMAKE_INSTALL_PREFIX}/${${PROJECT_NAME}_INSTALL_INCLUDE_DIR}/stk_balance/search_tolerance_algs)
+    ${${PROJECT_NAME}_INSTALL_INCLUDE_DIR}/stk_balance/search_tolerance_algs)
+
+if(NOT HAVE_STK_Trilinos)
+  INSTALL(TARGETS stk_balance_lib DESTINATION ${STK_INSTALL_LIBDIR})
+  INSTALL(TARGETS stk_balance DESTINATION ${STK_INSTALL_BINDIR})
+endif()
 

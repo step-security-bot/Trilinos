@@ -86,6 +86,7 @@ namespace Xpetra {
     typedef int local_ordinal_type;
     typedef GlobalOrdinal global_ordinal_type;
     typedef Node node_type;
+    typedef typename Map<LocalOrdinal,GlobalOrdinal,Node>::global_indices_array_device_type global_indices_array_device_type;
 
     //! @name Constructors and destructor
     //@{
@@ -124,7 +125,7 @@ namespace Xpetra {
     global_size_t getGlobalNumElements() const { return 0; }
 
     //! The number of elements belonging to the calling process.
-    size_t getNodeNumElements() const { return 0; }
+    size_t getLocalNumElements() const { return 0; }
 
     //! The index base for this Map.
     GlobalOrdinal getIndexBase() const { return 0; }
@@ -157,9 +158,12 @@ namespace Xpetra {
     LookupStatus getRemoteIndexList(const Teuchos::ArrayView< const GlobalOrdinal > &/* GIDList */, const Teuchos::ArrayView< int > &/* nodeIDList */) const { return Xpetra::IDNotPresent; }
 
     //! Return a view of the global indices owned by this process.
-    //Teuchos::ArrayView< const GlobalOrdinal > getNodeElementList() const;
+    Teuchos::ArrayView< const GlobalOrdinal > getLocalElementList() const { return ArrayView< const GlobalOrdinal >(); }
 
-    Teuchos::ArrayView< const GlobalOrdinal > getNodeElementList() const { return ArrayView< const GlobalOrdinal >(); }
+    //! Return a view of the global indices owned by this process.
+    global_indices_array_device_type getMyGlobalIndicesDevice() const { return global_indices_array_device_type(); }
+    
+
     //@}
 
     //! @name Boolean tests
@@ -240,7 +244,6 @@ namespace Xpetra {
     const Epetra_BlockMap& getEpetra_BlockMap() const { return *map_; }
     const Epetra_Map& getEpetra_Map() const { return (Epetra_Map &)*map_; } // Ugly, but the same is done in Epetra_CrsMatrix.h to get the map.
 
-#ifdef HAVE_XPETRA_KOKKOS_REFACTOR
 #ifdef HAVE_XPETRA_TPETRA
     using local_map_type = typename Map<LocalOrdinal, GlobalOrdinal, Node>::local_map_type;
     /// \brief Get the local Map for Kokkos kernels.
@@ -250,7 +253,6 @@ namespace Xpetra {
 #else
 #ifdef __GNUC__
 #warning "Xpetra Kokkos interface for CrsMatrix is enabled (HAVE_XPETRA_KOKKOS_REFACTOR) but Tpetra is disabled. The Kokkos interface needs Tpetra to be enabled, too."
-#endif
 #endif
 #endif
 
@@ -275,6 +277,7 @@ namespace Xpetra {
     typedef LocalOrdinal local_ordinal_type;
     typedef GlobalOrdinal global_ordinal_type;
     typedef Node node_type;
+    typedef typename Map<LocalOrdinal,GlobalOrdinal,Node>::global_indices_array_device_type global_indices_array_device_type;
 
     //! @name Constructors and destructor
     //@{
@@ -456,7 +459,7 @@ namespace Xpetra {
     global_size_t getGlobalNumElements() const { XPETRA_MONITOR("EpetraMapT::getGlobalNumElements"); return map_->NumGlobalElements64(); }
 
     //! The number of elements belonging to the calling process.
-    size_t getNodeNumElements() const { XPETRA_MONITOR("EpetraMapT::getNodeNumElements"); return map_->NumMyElements(); }
+    size_t getLocalNumElements() const { XPETRA_MONITOR("EpetraMapT::getLocalNumElements"); return map_->NumMyElements(); }
 
     //! The index base for this Map.
     GlobalOrdinal getIndexBase() const { XPETRA_MONITOR("EpetraMapT::getIndexBase"); return (GlobalOrdinal) map_->IndexBase64(); }
@@ -503,7 +506,19 @@ namespace Xpetra {
 
 
     //! Return a view of the global indices owned by this process.
-    Teuchos::ArrayView< const GlobalOrdinal > getNodeElementList() const { XPETRA_MONITOR("EpetraMapT::getNodeElementList"); return ArrayView< const int >(map_->MyGlobalElements(), map_->NumMyElements());  }
+    Teuchos::ArrayView< const GlobalOrdinal > getLocalElementList() const { XPETRA_MONITOR("EpetraMapT::getLocalElementList"); return ArrayView< const int >(map_->MyGlobalElements(), map_->NumMyElements());  }
+
+
+    //! Return a view of the global indices owned by this process.
+    global_indices_array_device_type getMyGlobalIndicesDevice() const {  
+      XPETRA_MONITOR("EpetraMapT::getMyGlobalIndicesDevice"); 
+      Teuchos::ArrayView< const GlobalOrdinal > view = getLocalElementList();
+      if(view.size() == 0) 
+        return global_indices_array_device_type();
+      else 
+        return Kokkos::View<const global_ordinal_type*,typename Node::device_type,Kokkos::MemoryUnmanaged>(view.data(),view.size());
+    }
+
     //@}
 
     //! @name Boolean tests
@@ -553,7 +568,7 @@ namespace Xpetra {
       std::ostringstream oss;
       oss << Teuchos::Describable::description();
       oss << "{getGlobalNumElements() = " << getGlobalNumElements()
-          << ", getNodeNumElements() = " << getNodeNumElements()
+          << ", getLocalNumElements() = " << getLocalNumElements()
           << ", isContiguous() = " << isContiguous()
           << ", isDistributed() = " << isDistributed()
           << "}";
@@ -576,8 +591,8 @@ namespace Xpetra {
       using Teuchos::VERB_HIGH;
       using Teuchos::VERB_EXTREME;
 
-      const size_t nME = getNodeNumElements();
-      Teuchos::ArrayView<const GlobalOrdinal> myEntries = getNodeElementList();
+      const size_t nME = getLocalNumElements();
+      Teuchos::ArrayView<const GlobalOrdinal> myEntries = getLocalElementList();
       int myImageID = comm_->getRank();
       int numImages = comm_->getSize();
 
@@ -693,7 +708,6 @@ namespace Xpetra {
 
     //@}
 
-#ifdef HAVE_XPETRA_KOKKOS_REFACTOR
 #ifdef HAVE_XPETRA_TPETRA
     using local_map_type = typename Map<LocalOrdinal, GlobalOrdinal, Node>::local_map_type;
     /// \brief Get the local Map for Kokkos kernels.
@@ -706,7 +720,6 @@ namespace Xpetra {
 #else
 #ifdef __GNUC__
 #warning "Xpetra Kokkos interface for CrsMatrix is enabled (HAVE_XPETRA_KOKKOS_REFACTOR) but Tpetra is disabled. The Kokkos interface needs Tpetra to be enabled, too."
-#endif
 #endif
 #endif
 
@@ -730,6 +743,8 @@ namespace Xpetra {
     typedef LocalOrdinal local_ordinal_type;
     typedef GlobalOrdinal global_ordinal_type;
     typedef Node node_type;
+    typedef typename Map<LocalOrdinal,GlobalOrdinal,Node>::global_indices_array_type global_indices_array_type;
+    
 
     //! @name Constructors and destructor
     //@{
@@ -910,7 +925,7 @@ namespace Xpetra {
     global_size_t getGlobalNumElements() const { XPETRA_MONITOR("EpetraMapT::getGlobalNumElements"); return map_->NumGlobalElements64(); }
 
     //! The number of elements belonging to the calling process.
-    size_t getNodeNumElements() const { XPETRA_MONITOR("EpetraMapT::getNodeNumElements"); return map_->NumMyElements(); }
+    size_t getLocalNumElements() const { XPETRA_MONITOR("EpetraMapT::getLocalNumElements"); return map_->NumMyElements(); }
 
     //! The index base for this Map.
     GlobalOrdinal getIndexBase() const { XPETRA_MONITOR("EpetraMapT::getIndexBase"); return (GlobalOrdinal) map_->IndexBase64(); }
@@ -943,7 +958,18 @@ namespace Xpetra {
     LookupStatus getRemoteIndexList(const Teuchos::ArrayView< const GlobalOrdinal > &GIDList, const Teuchos::ArrayView< int > &nodeIDList) const { XPETRA_MONITOR("EpetraMapT::getRemoteIndexList"); return toXpetra(map_->RemoteIDList(GIDList.size(), GIDList.getRawPtr(), nodeIDList.getRawPtr(), 0)); }
 
     //! Return a view of the global indices owned by this process.
-    Teuchos::ArrayView< const GlobalOrdinal > getNodeElementList() const { XPETRA_MONITOR("EpetraMapT::getNodeElementList"); return ArrayView< const long long >(map_->MyGlobalElements64(), map_->NumMyElements()); }
+    Teuchos::ArrayView< const GlobalOrdinal > getLocalElementList() const { XPETRA_MONITOR("EpetraMapT::getLocalElementList"); return ArrayView< const long long >(map_->MyGlobalElements64(), map_->NumMyElements()); }
+
+    //! Return a view of the global indices owned by this process.
+    global_indices_array_device_type getMyGlobalIndicesDevice() const {  
+      XPETRA_MONITOR("EpetraMapT::getMyGlobalIndicesDevice"); 
+      Teuchos::ArrayView< const GlobalOrdinal > view = getLocalElementList();
+      if(view.size() == 0) 
+        return global_indices_array_device_type();
+      else
+        return Kokkos::View<const global_ordinal_type*,typename Node::device_type,Kokkos::MemoryUnmanaged>(view.data(),view.size());
+    }
+
     //@}
 
     //! @name Boolean tests
@@ -989,7 +1015,7 @@ namespace Xpetra {
       std::ostringstream oss;
       oss << Teuchos::Describable::description();
       oss << "{getGlobalNumElements() = " << getGlobalNumElements()
-          << ", getNodeNumElements() = " << getNodeNumElements()
+          << ", getLocalNumElements() = " << getLocalNumElements()
           << ", isContiguous() = " << isContiguous()
           << ", isDistributed() = " << isDistributed()
           << "}";
@@ -1012,8 +1038,8 @@ namespace Xpetra {
       using Teuchos::VERB_HIGH;
       using Teuchos::VERB_EXTREME;
 
-      const size_t nME = getNodeNumElements();
-      Teuchos::ArrayView<const GlobalOrdinal> myEntries = getNodeElementList();
+      const size_t nME = getLocalNumElements();
+      Teuchos::ArrayView<const GlobalOrdinal> myEntries = getLocalElementList();
       int myImageID = comm_->getRank();
       int numImages = comm_->getSize();
 
@@ -1127,7 +1153,6 @@ namespace Xpetra {
     const Epetra_BlockMap& getEpetra_BlockMap() const { return *map_; }
     const Epetra_Map& getEpetra_Map() const { return (Epetra_Map &)*map_; } // Ugly, but the same is done in Epetra_CrsMatrix.h to get the map.
 
-#ifdef HAVE_XPETRA_KOKKOS_REFACTOR
 #ifdef HAVE_XPETRA_TPETRA
     using local_map_type = typename Map<LocalOrdinal, GlobalOrdinal, Node>::local_map_type;
     /// \brief Get the local Map for Kokkos kernels.
@@ -1140,7 +1165,6 @@ namespace Xpetra {
 #else
 #ifdef __GNUC__
 #warning "Xpetra Kokkos interface for CrsMatrix is enabled (HAVE_XPETRA_KOKKOS_REFACTOR) but Tpetra is disabled. The Kokkos interface needs Tpetra to be enabled, too."
-#endif
 #endif
 #endif
 

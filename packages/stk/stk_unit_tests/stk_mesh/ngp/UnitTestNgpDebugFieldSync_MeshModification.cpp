@@ -41,7 +41,6 @@
 #include <stk_mesh/base/MetaData.hpp>
 #include <stk_mesh/base/BulkData.hpp>
 #include <stk_mesh/base/Bucket.hpp>
-#include <stk_mesh/base/CoordinateSystems.hpp>
 #include <stk_mesh/base/Field.hpp>
 #include <stk_mesh/base/Entity.hpp>
 #include <stk_mesh/base/GetEntities.hpp>
@@ -63,6 +62,7 @@ class NgpDebugFieldSync_MeshModification : public NgpDebugFieldSyncFixture {};
 TEST_F(NgpDebugFieldSync_MeshModification, ChangeBucket_ProperlySyncToDevice_WithSimultaneousHostField_NoWarning)
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
   build_mesh({{"Part1", 2}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
@@ -84,6 +84,7 @@ TEST_F(NgpDebugFieldSync_MeshModification, ChangeBucket_ProperlySyncToDevice_Wit
 TEST_F(NgpDebugFieldSync_MeshModification, ChangeBucket_ProperlySyncToDevice_NoWarning)
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
   build_mesh({{"Part1", 2}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
@@ -105,8 +106,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, CreateBucket_ProperlySyncToDevice_NoW
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 1}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 1}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -126,8 +128,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, DeleteBucket_ProperlySyncToDevice_NoW
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 2}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 2}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -146,6 +149,7 @@ TEST_F(NgpDebugFieldSync_MeshModification, DeleteBucket_ProperlySyncToDevice_NoW
 TEST_F(NgpDebugFieldSync_MeshModification, ChangeBucket_ClearSyncState_AccessOnDevice_NoWarning)
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
   build_mesh({{"Part1", 2}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
@@ -167,8 +171,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, CreateBucket_ClearSyncState_AccessOnD
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 1}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 1}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -188,8 +193,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, DeleteBucket_ClearSyncState_AccessOnD
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 2}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 2}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -208,6 +214,7 @@ TEST_F(NgpDebugFieldSync_MeshModification, DeleteBucket_ClearSyncState_AccessOnD
 TEST_F(NgpDebugFieldSync_MeshModification, ChangeBucket_MissingAllModifySyncCallsToDevice_Warning)
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
   build_mesh({{"Part1", 2}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
@@ -226,8 +233,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, CreateBucket_MissingAllModifySyncCall
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 1}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 1}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -244,8 +252,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, DeleteBucket_MissingAllModifySyncCall
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 2}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 2}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -261,6 +270,7 @@ TEST_F(NgpDebugFieldSync_MeshModification, DeleteBucket_MissingAllModifySyncCall
 TEST_F(NgpDebugFieldSync_MeshModification, UsingBucketIdAndOrdinal_ChangeBucket_MissingAllModifySyncCallsToDevice_NoWarning)
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
   build_mesh({{"Part1", 2}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
@@ -279,8 +289,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, UsingBucketIdAndOrdinal_CreateBucket_
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 1}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 1}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -297,8 +308,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, UsingBucketIdAndOrdinal_DeleteBucket_
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 2}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 2}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -314,6 +326,7 @@ TEST_F(NgpDebugFieldSync_MeshModification, UsingBucketIdAndOrdinal_DeleteBucket_
 TEST_F(NgpDebugFieldSync_MeshModification, ChangeBucket_MissingAllModifySyncCallsToDevice_ClearSyncState_AccessOnDevice_NoWarning)
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
   build_mesh({{"Part1", 2}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
@@ -333,8 +346,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, CreateBucket_MissingAllModifySyncCall
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 1}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 1}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -352,8 +366,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, DeleteBucket_MissingAllModifySyncCall
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 2}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 2}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -370,6 +385,7 @@ TEST_F(NgpDebugFieldSync_MeshModification, DeleteBucket_MissingAllModifySyncCall
 TEST_F(NgpDebugFieldSync_MeshModification, ChangeBucket_MissingDeviceFieldUpdate_AccessOnDevice_Warning)
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
   build_mesh({{"Part1", 2}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
@@ -391,8 +407,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, CreateBucket_MissingDeviceFieldUpdate
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 1}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 1}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
   stk::mesh::NgpField<double, NgpDebugger> & ngpField = stk::mesh::get_updated_ngp_field<double, NgpDebugger>(stkField);
 
@@ -413,8 +430,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, DeleteBucket_MissingDeviceFieldUpdate
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 2}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 2}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
   stk::mesh::NgpField<double, NgpDebugger> & ngpField = stk::mesh::get_updated_ngp_field<double, NgpDebugger>(stkField);
 
@@ -433,6 +451,7 @@ TEST_F(NgpDebugFieldSync_MeshModification, DeleteBucket_MissingDeviceFieldUpdate
 TEST_F(NgpDebugFieldSync_MeshModification, ModifyBucket_StaleDeviceFieldCopy_AccessOnDevice_Warning)
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
   build_mesh({{"Part1", 2}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
@@ -459,8 +478,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, CreateBucket_StaleDeviceFieldCopy_Acc
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 1}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 1}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
   stk::mesh::NgpField<double, NgpDebugger> ngpFieldCopy = stk::mesh::get_updated_ngp_field<double, NgpDebugger>(stkField);
 
@@ -486,8 +506,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, DeleteBucket_StaleDeviceFieldCopy_Acc
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 2}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 2}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
   stk::mesh::NgpField<double, NgpDebugger> ngpFieldCopy = stk::mesh::get_updated_ngp_field<double, NgpDebugger>(stkField);
 
@@ -511,6 +532,7 @@ TEST_F(NgpDebugFieldSync_MeshModification, DeleteBucket_StaleDeviceFieldCopy_Acc
 TEST_F(NgpDebugFieldSync_MeshModification, ModifyBucket_StaleDeviceFieldCopy_ClearSyncState_AccessOnDevice_Warning)
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
   build_mesh({{"Part1", 2}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
@@ -537,8 +559,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, CreateBucket_StaleDeviceFieldCopy_Cle
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 1}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 1}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
   stk::mesh::NgpField<double, NgpDebugger> ngpFieldCopy = stk::mesh::get_updated_ngp_field<double, NgpDebugger>(stkField);
 
@@ -564,8 +587,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, DeleteBucket_StaleDeviceFieldCopy_Cle
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 2}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 2}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
   stk::mesh::NgpField<double, NgpDebugger> ngpFieldCopy = stk::mesh::get_updated_ngp_field<double, NgpDebugger>(stkField);
 
@@ -589,6 +613,7 @@ TEST_F(NgpDebugFieldSync_MeshModification, DeleteBucket_StaleDeviceFieldCopy_Cle
 TEST_F(NgpDebugFieldSync_MeshModification, ChangeBucket_ProperlySyncToHost_NoWarning)
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
   build_mesh({{"Part1", 2}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
@@ -611,8 +636,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, CreateBucket_ProperlySyncToHost_NoWar
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 1}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 1}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -633,8 +659,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, DeleteBucket_ProperlySyncToHost_NoWar
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 2}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 2}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -654,6 +681,7 @@ TEST_F(NgpDebugFieldSync_MeshModification, DeleteBucket_ProperlySyncToHost_NoWar
 TEST_F(NgpDebugFieldSync_MeshModification, ChangeBucket_ClearSyncState_NoWarning)
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
   build_mesh({{"Part1", 2}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
@@ -676,8 +704,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, CreateBucket_ClearSyncState_NoWarning
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 1}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 1}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -698,8 +727,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, DeleteBucket_ClearSyncState_NoWarning
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 2}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 2}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -719,6 +749,7 @@ TEST_F(NgpDebugFieldSync_MeshModification, DeleteBucket_ClearSyncState_NoWarning
 TEST_F(NgpDebugFieldSync_MeshModification, ChangeBucket_MissingAllModifySyncCallsToHost_Warning)
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
   build_mesh({{"Part1", 2}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
@@ -738,8 +769,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, CreateBucket_MissingAllModifySyncCall
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 1}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 1}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -757,8 +789,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, DeleteBucket_MissingAllModifySyncCall
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 2}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 2}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -775,6 +808,7 @@ TEST_F(NgpDebugFieldSync_MeshModification, DeleteBucket_MissingAllModifySyncCall
 TEST_F(NgpDebugFieldSync_MeshModification, ChangeBucket_MissingAllModifySyncCallsToHost_ClearSyncState_NoWarning)
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
   build_mesh({{"Part1", 2}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
@@ -794,8 +828,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, CreateBucket_MissingAllModifySyncCall
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 1}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 1}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -813,8 +848,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, DeleteBucket_MissingAllModifySyncCall
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 2}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 2}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -831,6 +867,7 @@ TEST_F(NgpDebugFieldSync_MeshModification, DeleteBucket_MissingAllModifySyncCall
 TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_ChangeBucket_ChangeBucket_ProperlySyncToDevice_NoWarning)
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
   build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
@@ -854,8 +891,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_CreateBucket_Creat
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 1}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 1}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -876,8 +914,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_DeleteBucket_Delet
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 3}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -897,6 +936,7 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_DeleteBucket_Delet
 TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_ChangeBucket_ChangeBucket_ModifyOnHost_ClearSyncState_NoWarning)
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
   build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
@@ -920,8 +960,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_CreateBucket_Creat
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 1}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 1}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -942,8 +983,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_DeleteBucket_Delet
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 3}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -963,6 +1005,7 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_DeleteBucket_Delet
 TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_ChangeBucket_ChangeBucket_MissingAllModifySyncCallsToDevice_NoWarning)
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
   build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
@@ -984,8 +1027,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_CreateBucket_Creat
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 1}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 1}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -1004,8 +1048,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_DeleteBucket_Delet
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 3}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -1023,6 +1068,7 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_DeleteBucket_Delet
 TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_ChangeBucket_ChangeBucket_MissingAllModifySyncCallsToDevice_ClearSyncState_NoWarning)
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
   build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
@@ -1045,8 +1091,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_CreateBucket_Creat
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 1}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 1}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -1066,8 +1113,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_DeleteBucket_Delet
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 3}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -1086,6 +1134,7 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_DeleteBucket_Delet
 TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_ChangeBucket_ChangeBucket_MissingDeviceFieldUpdate_Warning)
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
   build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
@@ -1109,8 +1158,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_CreateBucket_Creat
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 1}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 1}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
   stk::mesh::NgpField<double, NgpDebugger> & ngpField = stk::mesh::get_updated_ngp_field<double, NgpDebugger>(stkField);
 
@@ -1132,8 +1182,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_DeleteBucket_Delet
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 3}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
   stk::mesh::NgpField<double, NgpDebugger> & ngpField = stk::mesh::get_updated_ngp_field<double, NgpDebugger>(stkField);
 
@@ -1153,6 +1204,7 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_DeleteBucket_Delet
 TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_ChangeBucket_ChangeBucket_ProperlySyncToHost_NoWarning)
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
   build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
@@ -1176,8 +1228,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_CreateBucket_Creat
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 1}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 1}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -1199,8 +1252,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_DeleteBucket_Delet
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 3}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -1221,6 +1275,7 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_DeleteBucket_Delet
 TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_ChangeBucket_ChangeBucket_ModifyOnDevice_ClearSyncState_NoWarning)
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
   build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
@@ -1244,8 +1299,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_CreateBucket_Creat
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 1}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 1}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -1267,8 +1323,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_DeleteBucket_Delet
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 3}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -1289,6 +1346,7 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_DeleteBucket_Delet
 TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_ChangeBucket_ChangeBucket_MissingAllModifySyncCallsToHost_Warning)
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
   build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
@@ -1311,8 +1369,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_CreateBucket_Creat
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 1}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 1}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -1333,8 +1392,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_DeleteBucket_Delet
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 3}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -1354,6 +1414,7 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_DeleteBucket_Delet
 TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_ChangeBucket_ChangeBucket_MissingAllModifySyncCallsToHost_ClearSyncState_NoWarning)
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
   build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
@@ -1376,8 +1437,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_CreateBucket_Creat
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 1}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 1}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -1398,8 +1460,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_DeleteBucket_Delet
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 3}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -1419,6 +1482,7 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoConsecutiveMods_DeleteBucket_Delet
 TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_ChangeBucket_ChangeBucket_ProperlySyncToDevice_NoWarning)
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
   build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
@@ -1445,8 +1509,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_CreateBucket_CreateBucket_Pro
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 1}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 1}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -1471,8 +1536,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_DeleteBucket_DeleteBucket_Pro
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 3}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -1496,6 +1562,7 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_DeleteBucket_DeleteBucket_Pro
 TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_ChangeBucket_ChangeBucket_ProperlySyncToDevice_ClearSyncState_NoWarning)
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
   build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
@@ -1522,8 +1589,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_CreateBucket_CreateBucket_Pro
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 1}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 1}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -1548,8 +1616,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_DeleteBucket_DeleteBucket_Pro
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 3}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -1573,6 +1642,7 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_DeleteBucket_DeleteBucket_Pro
 TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_ChangeBucket_ChangeBucket_MissingAllModifySyncCallsToDevice_NoWarning)
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
   build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
@@ -1595,8 +1665,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_CreateBucket_CreateBucket_Mis
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 1}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 1}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -1617,8 +1688,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_DeleteBucket_DeleteBucket_Mis
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 3}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -1638,6 +1710,7 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_DeleteBucket_DeleteBucket_Mis
 TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_ChangeBucket_ChangeBucket_MissingAllModifySyncCallsToDevice_ClearSyncState_NoWarning)
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
   build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
@@ -1662,8 +1735,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_CreateBucket_CreateBucket_Mis
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 1}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 1}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -1686,8 +1760,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_DeleteBucket_DeleteBucket_Mis
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 3}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -1709,6 +1784,7 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_DeleteBucket_DeleteBucket_Mis
 TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_ChangeBucket_ChangeBucket_MissingDeviceFieldUpdate_Warning)
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
   build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
@@ -1733,8 +1809,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_CreateBucket_CreateBucket_Mis
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 1}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 1}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
   stk::mesh::NgpField<double, NgpDebugger> & ngpField = stk::mesh::get_updated_ngp_field<double, NgpDebugger>(stkField);
 
@@ -1758,8 +1835,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_DeleteBucket_DeleteBucket_Mis
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 3}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
   stk::mesh::NgpField<double, NgpDebugger> & ngpField = stk::mesh::get_updated_ngp_field<double, NgpDebugger>(stkField);
 
@@ -1781,6 +1859,7 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_DeleteBucket_DeleteBucket_Mis
 TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_ChangeBucket_ChangeBucket_ProperlySyncToHost_NoWarning)
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
   build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
@@ -1807,8 +1886,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_CreateBucket_CreateBucket_Pro
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 1}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 1}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -1833,8 +1913,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_DeleteBucket_DeleteBucket_Pro
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 3}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -1858,6 +1939,7 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_DeleteBucket_DeleteBucket_Pro
 TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_ChangeBucket_ChangeBucket_ModifyOnDevice_ClearSyncState_NoWarning)
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
   build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
@@ -1884,8 +1966,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_CreateBucket_CreateBucket_Mod
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 1}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 1}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -1910,8 +1993,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_DeleteBucket_DeleteBucket_Mod
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 3}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -1935,6 +2019,7 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_DeleteBucket_DeleteBucket_Mod
 TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_ChangeBucket_ChangeBucket_MissingAllModifySyncCallsToHost_Warning)
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
   build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
@@ -1958,8 +2043,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_CreateBucket_CreateBucket_Mis
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 1}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 1}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -1981,8 +2067,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_DeleteBucket_DeleteBucket_Mis
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 3}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -2003,6 +2090,7 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_DeleteBucket_DeleteBucket_Mis
 TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_ChangeBucket_ChangeBucket_MissingAllModifySyncCallsToHost_ClearSyncState_NoWarning)
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
   build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
@@ -2027,8 +2115,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_CreateBucket_CreateBucket_Mis
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 1}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 1}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();
@@ -2051,8 +2140,9 @@ TEST_F(NgpDebugFieldSync_MeshModification, TwoMods_DeleteBucket_DeleteBucket_Mis
 {
   if (stk::parallel_machine_size(MPI_COMM_WORLD) != 1) return;
   const unsigned bucketCapacity = 1;
+  setup_empty_mesh(stk::mesh::BulkData::NO_AUTO_AURA, bucketCapacity, bucketCapacity);
   declare_scalar_field<double>("doubleScalarField", {"Part1", "Part2"});
-  build_mesh({{"Part1", 3}, {"Part2", 1}}, bucketCapacity);
+  build_mesh({{"Part1", 3}, {"Part2", 1}});
   stk::mesh::Field<double> & stkField = initialized_field<double>("doubleScalarField");
 
   testing::internal::CaptureStdout();

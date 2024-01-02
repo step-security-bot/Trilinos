@@ -8,7 +8,7 @@
 namespace Compadre {
 
     //! Available target functionals
-    enum TargetOperation {
+    enum TargetOperation : int {
         //! Point evaluation of a scalar
         ScalarPointEvaluation,
         //! Point evaluation of a vector (reconstructs entire vector at once, requiring a 
@@ -39,36 +39,60 @@ namespace Compadre {
         ChainedStaggeredLaplacianOfScalarPointEvaluation,
         //! Point evaluation of Gaussian curvature
         GaussianCurvaturePointEvaluation,
-        //! Average of values in a face of a cell using quadrature
-        //! 2D in 3D problem, 1D in 2D problem
-        ScalarFaceAverageEvaluation,
+        //! Average values of a cell using quadrature
+        //! Supported on 2D faces in 3D problems (manifold) and 2D cells in 2D problems
+        CellAverageEvaluation,
+        //! Integral values over cell using quadrature
+        //! Supported on 2D faces in 3D problems (manifold) and 2D cells in 2D problems
+        CellIntegralEvaluation,
+        //! Average value of vector dotted with normal direction
+        //! Supported on 1D edges in 3D problems (2D-manifold) and 1D edges on 2D cells
+        FaceNormalAverageEvaluation,
+        //! Integral value of vector dotted with normal direction
+        //! Supported on 1D edges in 3D problems (2D-manifold) and 1D edges on 2D cells
+        FaceNormalIntegralEvaluation,
+        //! Average value of vector dotted with tangent directions
+        //! Supported on 1D edges in 3D problems (2D-manifold) and 1D edges on 2D cells
+        EdgeTangentAverageEvaluation,
+        //! Integral value of vector dotted with tangent directions
+        //! Supported on 1D edges in 3D problems (2D-manifold) and 1D edges on 2D cells
+        EdgeTangentIntegralEvaluation,
         //! Should be the total count of all available target functionals
-        COUNT=15,
+        COUNT=20,
     };
 
     //! Rank of target functional output for each TargetOperation 
     //! Rank of target functional input for each TargetOperation is based on the output
     //! rank of the SamplingFunctional used on the polynomial basis
-    constexpr int TargetOutputTensorRank[] {
-        0, ///< PointEvaluation
-        1, ///< VectorPointEvaluation
-        0, ///< LaplacianOfScalarPointEvaluation
-        1, ///< VectorLaplacianPointEvaluation
-        1, ///< GradientOfScalarPointEvaluation
-        2, ///< GradientOfVectorPointEvaluation
-        0, ///< DivergenceOfVectorPointEvaluation
-        1, ///< CurlOfVectorPointEvaluation
-        1, ///< CurlCurlOfVectorPointEvaluation
-        0, ///< PartialXOfScalarPointEvaluation
-        0, ///< PartialYOfScalarPointEvaluation
-        0, ///< PartialZOfScalarPointEvaluation
-        0, ///< ChainedStaggeredLaplacianOfScalarPointEvaluation
-        0, ///< GaussianCurvaturePointEvaluation
-        0, ///< ScalarFaceAverageEvaluation
-    };
+    KOKKOS_INLINE_FUNCTION
+    int getTargetOutputTensorRank(const int& index) {
+        constexpr int TargetOutputTensorRank[] {
+            0, ///< PointEvaluation
+            1, ///< VectorPointEvaluation
+            0, ///< LaplacianOfScalarPointEvaluation
+            1, ///< VectorLaplacianPointEvaluation
+            1, ///< GradientOfScalarPointEvaluation
+            2, ///< GradientOfVectorPointEvaluation
+            0, ///< DivergenceOfVectorPointEvaluation
+            1, ///< CurlOfVectorPointEvaluation
+            1, ///< CurlCurlOfVectorPointEvaluation
+            0, ///< PartialXOfScalarPointEvaluation
+            0, ///< PartialYOfScalarPointEvaluation
+            0, ///< PartialZOfScalarPointEvaluation
+            0, ///< ChainedStaggeredLaplacianOfScalarPointEvaluation
+            0, ///< GaussianCurvaturePointEvaluation
+            0, ///< CellAverageEvaluation
+            0, ///< CellIntegralEvaluation
+            0, ///< FaceNormalAverageEvaluation
+            0, ///< FaceNormalIntegralEvaluation
+            0, ///< EdgeTangentAverageEvaluation
+            0, ///< EdgeTangentIntegralEvaluation
+        };
+        return TargetOutputTensorRank[index];
+    }
 
     //! Space in which to reconstruct polynomial
-    enum ReconstructionSpace {
+    enum ReconstructionSpace : int {
         //! Scalar polynomial basis centered at the target site and scaled by sum of basis powers 
         //! e.g. \f$(x-x_t)^2*(y-y_t)*(z-z_t)^3/factorial(2+1+3)\f$ would be a member of 3rd order in 3D, where 
         //! \f$(x_t,y_t,z_t)\f$ is the coordinate of the target site in 3D coordinates.
@@ -80,18 +104,25 @@ namespace Compadre {
         VectorOfScalarClonesTaylorPolynomial,
         //! Divergence-free vector polynomial basis
         DivergenceFreeVectorTaylorPolynomial,
+        //! Bernstein polynomial basis
+        BernsteinPolynomial,
     };
 
     //! Number of actual components in the ReconstructionSpace
-    constexpr int ActualReconstructionSpaceRank[] = {
-        0, ///< ScalarTaylorPolynomial
-        1, ///< VectorTaylorPolynomial
-        0, ///< VectorOfScalarClonesTaylorPolynomial
-        0, ///< DivergenceFreeVectorTaylorPolynomial
-    };
+    KOKKOS_INLINE_FUNCTION
+    int getActualReconstructionSpaceRank(const int& index) {
+        constexpr int ActualReconstructionSpaceRank[] = {
+            0, ///< ScalarTaylorPolynomial
+            1, ///< VectorTaylorPolynomial
+            0, ///< VectorOfScalarClonesTaylorPolynomial
+            0, ///< DivergenceFreeVectorTaylorPolynomial
+            0, ///< BernsteinPolynomial
+        };
+        return ActualReconstructionSpaceRank[index];
+    }
 
     //! Describes the SamplingFunction relationship to targets, neighbors
-    enum SamplingTransformType {
+    enum SamplingTransformType : int {
         Identity,           ///< No action performed on data before GMLS target operation
         SameForAll,         ///< Each neighbor for each target all apply the same transform
         DifferentEachTarget,   ///< Each target applies a different data transform, but the same to each neighbor
@@ -160,19 +191,22 @@ namespace Compadre {
         FaceNormalIntegralSample = make_sampling_functional(1,0,false,false,(int)Identity),
 
         //! For polynomial dotted with normal on edge
-        FaceNormalPointSample = make_sampling_functional(1,0,false,false,(int)Identity),
+        FaceNormalAverageSample = make_sampling_functional(1,0,false,false,(int)Identity),
 
         //! For integrating polynomial dotted with tangent over an edge
-        FaceTangentIntegralSample = make_sampling_functional(1,0,false,false,(int)Identity),
+        EdgeTangentIntegralSample = make_sampling_functional(1,0,false,false,(int)Identity),
 
         //! For polynomial dotted with tangent
-        FaceTangentPointSample = make_sampling_functional(1,0,false,false,(int)Identity),
+        EdgeTangentAverageSample = make_sampling_functional(1,0,false,false,(int)Identity),
 
-        //! For polynomial integrated on faces
-        ScalarFaceAverageSample = make_sampling_functional(0,0,false,false,(int)DifferentEachNeighbor);
+        //! For polynomial integrated on cells
+        CellAverageSample = make_sampling_functional(0,0,false,false,(int)DifferentEachNeighbor),
+
+        //! For polynomial integrated on cells
+        CellIntegralSample = make_sampling_functional(0,0,false,false,(int)DifferentEachNeighbor);
 
     //! Dense solver type
-    enum DenseSolverType {
+    enum DenseSolverType : int {
         //! QR+Pivoting factorization performed on P*sqrt(w) matrix
         QR, 
         //! LU factorization performed on P^T*W*P matrix
@@ -180,7 +214,7 @@ namespace Compadre {
     };
 
     //! Problem type, that optionally can handle manifolds
-    enum ProblemType {
+    enum ProblemType : int {
         //! Standard GMLS problem type
         STANDARD, 
         //! Solve GMLS problem on a manifold (will use QR or SVD to solve the resultant GMLS 
@@ -189,7 +223,7 @@ namespace Compadre {
     };
 
     //! Constraint type
-    enum ConstraintType {
+    enum ConstraintType : int {
         //! No constraint
         NO_CONSTRAINT,
         //! Neumann Gradient Scalar Type
@@ -197,15 +231,17 @@ namespace Compadre {
     };
 
     //! Available weighting kernel function types
-    enum WeightingFunctionType {
+    enum WeightingFunctionType : int {
         Power,
         Gaussian,
         CubicSpline,
+        Cosine,
+        Sigmoid
     };
 
     //! Coordinate type for input and output format of vector data on manifold problems.
     //! Anything without a manifold is always Ambient.
-    enum CoordinatesType {
+    enum CoordinatesType : int {
         Ambient, ///< a 2D manifold in 3D in ambient coordinates would have 3 components for a vector
         Local,   ///< a 2D manifold in 3D in local coordinates would have 2 components for a vector
     };

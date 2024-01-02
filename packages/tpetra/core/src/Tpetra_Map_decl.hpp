@@ -49,7 +49,7 @@
 #include "Tpetra_Directory_fwd.hpp"
 #include "Tpetra_TieBreak_fwd.hpp"
 #include "Tpetra_Details_LocalMap.hpp"
-#include "Kokkos_DefaultNode.hpp"
+#include "Tpetra_KokkosCompat_DefaultNode.hpp"
 #include "Kokkos_DualView.hpp"
 #include "Teuchos_Array.hpp"
 #include "Teuchos_Comm.hpp"
@@ -95,13 +95,13 @@ namespace Tpetra {
   ///   The actual default type depends on your Trilinos build options.
   ///   This must be one of the following:
   ///   <ul>
-  ///   <li> Kokkos::Compat::KokkosCudaWrapperNode </li>
-  ///   <li> Kokkos::Compat::KokkosOpenMPWrapperNode </li>
-  ///   <li> Kokkos::Compat::KokkosThreadsWrapperNode </li>
-  ///   <li> Kokkos::Compat::KokkosSerialWrapperNode </li>
+  ///   <li> Tpetra::KokkosCompat::KokkosCudaWrapperNode </li>
+  ///   <li> Tpetra::KokkosCompat::KokkosOpenMPWrapperNode </li>
+  ///   <li> Tpetra::KokkosCompat::KokkosThreadsWrapperNode </li>
+  ///   <li> Tpetra::KokkosCompat::KokkosSerialWrapperNode </li>
   ///   </ul>
   ///   All of the above are just typedefs for
-  ///   Kokkos::Compat::KokkosDeviceWrapperNode<ExecutionSpaceType,
+  ///   Tpetra::KokkosCompat::KokkosDeviceWrapperNode<ExecutionSpaceType,
   ///   MemorySpaceType>, where ExecutionSpaceType is a Kokkos
   ///   execution space type, and MemorySpaceType is a Kokkos memory
   ///   space type.  If you omit MemorySpaceType, Tpetra will use the
@@ -251,15 +251,6 @@ namespace Tpetra {
 
     //! Legacy typedef that will go away at some point.
     using node_type = Node;
-
-    //! The hash will be CudaSpace, not CudaUVMSpace
-#ifdef KOKKOS_ENABLE_CUDA
-    using no_uvm_memory_space = typename std::conditional<std::is_same<memory_space, Kokkos::CudaUVMSpace>::value,
-      Kokkos::CudaSpace, memory_space>::type;
-    using no_uvm_device_type = Kokkos::Device<execution_space, no_uvm_memory_space>;
-#else
-    using no_uvm_device_type = device_type;
-#endif
 
     /// \brief Type of the "local" Map.
     ///
@@ -582,7 +573,7 @@ namespace Tpetra {
     /// \note This function should be thread safe and thread scalable,
     ///   assuming that you refer to the Map by value or reference,
     ///   not by Teuchos::RCP.
-    size_t getNodeNumElements () const {
+    size_t getLocalNumElements () const {
       return numLocalElements_;
     }
 
@@ -607,7 +598,7 @@ namespace Tpetra {
     /// \brief The maximum local index on the calling process.
     ///
     /// If this process owns no elements, that is, if
-    /// <tt>getNodeNumElements() == 0</tt>, then this method returns
+    /// <tt>getLocalNumElements() == 0</tt>, then this method returns
     /// the same value as
     /// <tt>Teuchos::OrdinalTraits<local_ordinal_type>::invalid()</tt>.
     ///
@@ -615,10 +606,10 @@ namespace Tpetra {
     ///   assuming that you refer to the Map by value or reference,
     ///   not by Teuchos::RCP.
     local_ordinal_type getMaxLocalIndex () const {
-      if (this->getNodeNumElements () == 0) {
+      if (this->getLocalNumElements () == 0) {
         return Tpetra::Details::OrdinalTraits<local_ordinal_type>::invalid ();
       } else { // Local indices are always zero-based.
-        return static_cast<local_ordinal_type> (this->getNodeNumElements () - 1);
+        return static_cast<local_ordinal_type> (this->getLocalNumElements () - 1);
       }
     }
 
@@ -765,6 +756,9 @@ namespace Tpetra {
                          Kokkos::LayoutLeft,
                          Kokkos::HostSpace> global_indices_array_type;
 
+    typedef Kokkos::View<const global_ordinal_type*,
+                         device_type> global_indices_array_device_type;
+    
   public:
     /// \brief Return a view of the global indices owned by this process.
     ///
@@ -787,6 +781,10 @@ namespace Tpetra {
     /// of global indices.
     global_indices_array_type getMyGlobalIndices () const;
 
+    /// \brief Return a view of the global indices owned by this process on the Map's device.
+    global_indices_array_device_type getMyGlobalIndicesDevice () const;
+
+
     /// \brief Return a NONOWNING view of the global indices owned by
     ///   this process.
     ///
@@ -797,7 +795,7 @@ namespace Tpetra {
     /// and cache the list of global indices for later use.  Beware of
     /// calling this if the calling process owns a very large number
     /// of global indices.
-    Teuchos::ArrayView<const global_ordinal_type> getNodeElementList() const;
+    Teuchos::ArrayView<const global_ordinal_type> getLocalElementList() const;
 
     //@}
     //! @name Boolean tests
@@ -1128,6 +1126,9 @@ namespace Tpetra {
       const global_ordinal_type indexBase,
       const Teuchos::RCP<const Teuchos::Comm<int>>& comm);
 
+    /// \brief Push the device data to host, if needed
+    void lazyPushToHost() const;
+
     //! The communicator over which this Map is distributed.
     Teuchos::RCP<const Teuchos::Comm<int> > comm_;
 
@@ -1207,13 +1208,13 @@ namespace Tpetra {
     /// <ol>
     /// <li> It is always created for a noncontiguous Map, in the
     ///    noncontiguous version of the Map constructor.</li>
-    /// <li> In getNodeElementList(), on demand (if it wasn't created
+    /// <li> In getLocalElementList(), on demand (if it wasn't created
     ///    before).</li>
     /// </ol>
     ///
     /// The potential for on-demand creation is why this member datum
     /// is declared "mutable".  Note that other methods, such as
-    /// describe(), may invoke getNodeElementList().
+    /// describe(), may invoke getLocalElementList().
     ///
     /// To clarify: If this is empty, then it could be either that the
     /// Map is contiguous (meaning that we don't need to store all the
@@ -1229,12 +1230,12 @@ namespace Tpetra {
     /// the nondefault layout.
     mutable Kokkos::View<const global_ordinal_type*,
                          Kokkos::LayoutLeft,
-                         no_uvm_device_type> lgMap_;
+                         device_type> lgMap_;
 
     /// \brief Host View of lgMap_.
     ///
     /// This is allocated along with lgMap_, on demand (lazily), by
-    /// getNodeElementList() (which see).  It is also used by
+    /// getLocalElementList() (which see).  It is also used by
     /// getGlobalElement() (which is a host method, and therefore
     /// requires a host View) if necessary (only noncontiguous Maps
     /// need this).
@@ -1246,7 +1247,7 @@ namespace Tpetra {
 
     //! Type of a mapping from global IDs to local IDs.
     typedef ::Tpetra::Details::FixedHashTable<global_ordinal_type,
-      local_ordinal_type, no_uvm_device_type> global_to_local_table_type;
+      local_ordinal_type, device_type> global_to_local_table_type;
 
     /// \brief A mapping from global IDs to local IDs.
     ///
@@ -1272,7 +1273,7 @@ namespace Tpetra {
     /// Used by getLocalElement() (which is a host method, and therefore
     /// requires a host View) if necessary (only noncontiguous Maps
     /// need this).
-    global_to_local_table_host_type glMapHost_;
+    mutable global_to_local_table_host_type glMapHost_;
 
     /// \brief Object that can find the process rank and local index
     ///   for any given global index.

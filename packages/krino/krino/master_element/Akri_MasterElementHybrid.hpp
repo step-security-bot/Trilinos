@@ -20,11 +20,8 @@ namespace krino {
 class MasterElementHybrid
 {
 public:
-  static const MasterElementHybrid & getMasterElement(stk::topology t);
-
-  MasterElementHybrid(
-      stk::topology topology,
-      std::unique_ptr<Basis> basis);
+  MasterElementHybrid(stk::topology topology);
+  ~MasterElementHybrid();
 
   // Copy and assignment are not allowed
   MasterElementHybrid( const MasterElementHybrid & ) = delete;
@@ -47,6 +44,7 @@ public:
 
   const double * nodal_parametric_coordinates() const { return m_refCoords.data(); }
   const double * centroid_parametric_coordinates() const { return m_centroidParCoords.data(); }
+  double parametric_volume() const { return m_refVolume; }
 
   void determinant(
      const int numCoordDims,
@@ -123,7 +121,8 @@ private:
 
   std::unique_ptr<Basis> m_Basis;
 
-  // Local FieldContainers
+  double m_refVolume;
+
   std::vector<double> m_shapeFuncs;
   std::vector<double> m_pointGrads;
   std::vector<double> m_refPoints;

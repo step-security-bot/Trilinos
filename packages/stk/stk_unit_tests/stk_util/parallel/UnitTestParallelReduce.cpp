@@ -112,7 +112,48 @@ TEST(ParallelComm, AllReduce)
     for(int n = 0; n < nvalues; n++) {
       EXPECT_EQ(n*numProcs + alpha, globalValues[n]);
     }
-
 }
+
+TEST(ParallelComm, GetGlobal)
+{
+    stk::ParallelMachine comm = MPI_COMM_WORLD;
+
+    int myProcId = stk::parallel_machine_rank(comm);
+    int numProcs = stk::parallel_machine_size(comm);
+
+    double localValue = myProcId * numProcs;
+
+    double globalMax = stk::get_global_max(comm, localValue);
+    EXPECT_EQ(globalMax, (numProcs-1)*numProcs);
+
+    double globalMin = stk::get_global_min(comm, localValue);
+    EXPECT_EQ(globalMin, 0);
+
+    int expectedSum = 0;
+    for(int n = 0; n < numProcs; ++n) {
+      expectedSum += n*numProcs;
+    }
+
+    double globalSum = stk::get_global_sum(comm, localValue);
+    EXPECT_EQ(globalSum, expectedSum);
+}
+
+TEST(ParallelComm, uint64_reduce_min)
+{
+  // Test coverage of openmpi-4.1.4 bug with unsigned integer min reduction
+  stk::ParallelMachine comm = MPI_COMM_WORLD;
+
+  int myProcId = stk::parallel_machine_rank(comm);
+
+  const uint64_t goldValue = 10;
+
+  uint64_t id = (myProcId == 0) ? goldValue : std::numeric_limits<uint64_t>::max();
+  uint64_t gid;
+
+  stk::all_reduce_min(comm, &id, &gid, 1u);
+
+  EXPECT_EQ(goldValue, gid);
+}
+
 #endif
 

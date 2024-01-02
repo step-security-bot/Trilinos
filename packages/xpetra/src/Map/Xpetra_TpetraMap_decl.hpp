@@ -64,11 +64,12 @@ namespace Xpetra {
 
   template <class LocalOrdinal,
             class GlobalOrdinal,
-            class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+            class Node = Tpetra::KokkosClassic::DefaultNode::DefaultNodeType>
   class TpetraMap
     : public virtual Map<LocalOrdinal,GlobalOrdinal,Node> {
 
   public:
+    typedef typename Map<LocalOrdinal,GlobalOrdinal,Node>::global_indices_array_device_type global_indices_array_device_type;
 
     //! @name Constructors and destructor
     //@{
@@ -101,14 +102,12 @@ namespace Xpetra {
                const Teuchos::RCP< const Teuchos::Comm< int > > &comm);
 
 
-#ifdef HAVE_XPETRA_KOKKOS_REFACTOR
 #ifdef HAVE_XPETRA_TPETRA
     //! Constructor with user-defined arbitrary (possibly noncontiguous) distribution passed as a Kokkos::View.
     TpetraMap (global_size_t numGlobalElements,
                const Kokkos::View<const GlobalOrdinal*, typename Node::device_type>& indexList,
                GlobalOrdinal indexBase,
                const Teuchos::RCP< const Teuchos::Comm< int > > &comm);
-#endif
 #endif
 
     //! Destructor
@@ -122,7 +121,7 @@ namespace Xpetra {
     global_size_t getGlobalNumElements() const;
 
     //! The number of elements belonging to the calling node.
-    size_t getNodeNumElements() const;
+    size_t getLocalNumElements() const;
 
     //! The index base for this Map.
     GlobalOrdinal getIndexBase() const;
@@ -158,8 +157,11 @@ namespace Xpetra {
     LookupStatus getRemoteIndexList(const Teuchos::ArrayView< const GlobalOrdinal > &GIDList, const Teuchos::ArrayView< int > &nodeIDList) const;
 
     //! Return a view of the global indices owned by this node.
-    Teuchos::ArrayView< const GlobalOrdinal > getNodeElementList() const;
+    Teuchos::ArrayView< const GlobalOrdinal > getLocalElementList() const;
 
+    //! Return a view of the global indices owned by this process.
+    global_indices_array_device_type getMyGlobalIndicesDevice() const;
+    
     //@}
 
     //! @name Boolean tests
@@ -220,12 +222,10 @@ namespace Xpetra {
     //! Get the underlying Tpetra map
     RCP< const Tpetra::Map< LocalOrdinal, GlobalOrdinal, Node > > getTpetra_Map() const;
 
-#ifdef HAVE_XPETRA_KOKKOS_REFACTOR
 #ifdef HAVE_XPETRA_TPETRA
     using local_map_type = typename Map<LocalOrdinal, GlobalOrdinal, Node>::local_map_type;
     /// \brief Get the local Map for Kokkos kernels.
     local_map_type getLocalMap () const;
-#endif
 #endif
 
     //@}

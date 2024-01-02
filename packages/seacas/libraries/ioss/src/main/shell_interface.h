@@ -1,5 +1,5 @@
 /*
- * Copyright(C) 1999-2021 National Technology & Engineering Solutions
+ * Copyright(C) 1999-2023 National Technology & Engineering Solutions
  * of Sandia, LLC (NTESS).  Under the terms of Contract DE-NA0003525 with
  * NTESS, the U.S. Government retains certain rights in this software.
  *
@@ -20,7 +20,7 @@ namespace IOShell {
   class Interface
   {
   public:
-    Interface(const std::string &app_version);
+    explicit Interface(const std::string &app_version);
     ~Interface();
 
     bool parse_options(int argc, char **argv, int my_processor);
@@ -40,12 +40,16 @@ namespace IOShell {
     std::string              decomp_method;
     std::string              decomp_extra{"processor_id"};
     std::string              compose_output{"default"};
+    std::string              customField{""};
     double                   maximum_time{std::numeric_limits<double>::max()};
     double                   minimum_time{-std::numeric_limits<double>::max()};
     double                   append_time{std::numeric_limits<double>::max()};
     double                   timestep_delay{0.0};
+    double                   rel_tolerance{0.0};
+    double                   abs_tolerance{0.0};
+    double                   tol_floor{0.0};
     int                      append_step{std::numeric_limits<int>::max()};
-    int                      surface_split_type{1};
+    int                      surface_split_type{-1};
     int                      data_storage_type{0};
     int                      compression_level{0};
     int                      serialize_io_size{0};
@@ -71,6 +75,7 @@ namespace IOShell {
     bool zlib{true};
     bool szip{false};
     bool debug{false};
+    bool detect_nans{false};
     bool statistics{false};
     bool memory_statistics{false};
     bool do_transform_fields{false};

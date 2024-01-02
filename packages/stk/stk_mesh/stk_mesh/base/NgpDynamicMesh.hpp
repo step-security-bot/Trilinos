@@ -37,7 +37,6 @@
 #include "stk_util/stk_config.h"
 #include "stk_util/util/StridedArray.hpp"
 #include "Kokkos_Core.hpp"
-#include "Kokkos_MemoryPool.hpp"
 #include "stk_mesh/base/BulkData.hpp"
 #include "stk_mesh/base/MetaData.hpp"
 
@@ -57,7 +56,7 @@
 #ifdef KOKKOS_ENABLE_CUDA
 typedef Kokkos::Cuda Device;
 #elif defined(KOKKOS_ENABLE_HIP)
-typedef Kokkos::Experimental::HIP Device;
+typedef Kokkos::HIP Device;
 #else
 typedef Kokkos::Serial Device;
 #endif
@@ -65,6 +64,13 @@ typedef Kokkos::Serial Device;
 namespace stk {
 namespace mesh {
 
+#ifdef KOKKOS_ENABLE_HIP
+    template <typename Tag>
+    using CustomRangePolicy = Kokkos::RangePolicy<stk::ngp::ExecSpace, Kokkos::LaunchBounds<128, 1>, Tag>;
+#else
+    template <typename Tag>
+    using CustomRangePolicy = Kokkos::RangePolicy<stk::ngp::ExecSpace, Tag>;
+#endif
 
 typedef Kokkos::View<unsigned*, stk::ngp::MemSpace> UnsignedViewType;
 typedef Kokkos::View<stk::mesh::EntityRank*, stk::ngp::MemSpace> RankViewType;
@@ -472,9 +478,9 @@ private:
 
     Kokkos::deep_copy(buckets[rank], hostBuckets[rank]);
 
-    Kokkos::parallel_for(Kokkos::RangePolicy<stk::ngp::ExecSpace,alloc_part_ords_tag>(0,numStkBuckets), *this);
-    Kokkos::parallel_for(Kokkos::RangePolicy<stk::ngp::ExecSpace,alloc_entities_tag>(0,numStkBuckets), *this);
-    Kokkos::parallel_for(Kokkos::RangePolicy<stk::ngp::ExecSpace,alloc_connectivity_tag>(0,numStkBuckets), *this);
+    Kokkos::parallel_for(CustomRangePolicy<alloc_part_ords_tag>(0, numStkBuckets), *this);
+    Kokkos::parallel_for(CustomRangePolicy<alloc_entities_tag>(0, numStkBuckets), *this);
+    Kokkos::parallel_for(CustomRangePolicy<alloc_connectivity_tag>(0, numStkBuckets), *this);
 
     Kokkos::deep_copy(indexOfFirstEmptyBucket, hostIndexOfFirstEmptyBucket);
     Kokkos::deep_copy(hostBuckets[rank], buckets[rank]);

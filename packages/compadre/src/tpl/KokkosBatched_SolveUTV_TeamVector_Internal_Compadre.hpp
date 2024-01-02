@@ -40,7 +40,8 @@ namespace KokkosBatched {
            const IntType   * p, const int ps0,
            /* */ ValueType * B, const int bs0, const int bs1,
            /* */ ValueType * X, const int xs0, const int xs1,
-           /* */ ValueType * w, ValueType * wq) {
+           /* */ ValueType * w, ValueType * wq, 
+           const bool implicit_RHS) {
     
         typedef ValueType value_type;
     
@@ -53,7 +54,10 @@ namespace KokkosBatched {
         bool do_print = false;
         if (do_print) {
             Kokkos::single(Kokkos::PerTeam(member), [&] () {
-                printf("size is: %d %d %d %d\n", matrix_rank, m, n, nrhs); 
+#if KOKKOS_VERSION >= 40200
+                using Kokkos::printf;
+#endif
+                printf("size is: %d %d %d %d\n", matrix_rank, m, n, nrhs);
                 printf("U, us1, us0: %d %d\n", us1, us0);
                 printf("T, ts0, ts1: %d %d\n", ts0, ts1);
                 printf("B, bs0, bs1: %d %d\n", bs0, bs1);
@@ -72,7 +76,7 @@ namespace KokkosBatched {
             // T is matrix_rank x matrix_rank
             // V is matrix_rank x n
             // W = U^T B
-            if (m==n) { // LU case
+            if (!implicit_RHS) { // LU case
                 TeamVectorGemmInternal<Algo::Gemm::Unblocked>
                   ::invoke(member,
                        matrix_rank, nrhs, m,
@@ -98,6 +102,9 @@ namespace KokkosBatched {
     
             if (do_print) {
                 Kokkos::single(Kokkos::PerTeam(member), [&] () {
+#if KOKKOS_VERSION >= 40200
+                    using Kokkos::printf;
+#endif
                     printf("W=zeros(%d,%d);\n", m, nrhs);
                     for (int i=0; i<m; ++i) {
                         for (int j=0; j<nrhs; ++j) {
@@ -125,6 +132,9 @@ namespace KokkosBatched {
     
             if (do_print) {
                 Kokkos::single(Kokkos::PerTeam(member), [&] () {
+#if KOKKOS_VERSION >= 40200
+                    using Kokkos::printf;
+#endif
                     printf("W=zeros(%d,%d);\n", m, nrhs);
                     for (int i=0; i<m; ++i) {
                         for (int j=0; j<nrhs; ++j) {
@@ -147,6 +157,9 @@ namespace KokkosBatched {
     
             if (do_print) {
                 Kokkos::single(Kokkos::PerTeam(member), [&] () {
+#if KOKKOS_VERSION >= 40200
+                    using Kokkos::printf;
+#endif
                     printf("X=zeros(%d,%d);\n", n, nrhs);
                     for (int i=0; i<n; ++i) {
                         for (int j=0; j<nrhs; ++j) {
@@ -156,7 +169,7 @@ namespace KokkosBatched {
                 });
             }
         } else {
-            if (m==n) { // LU case
+            if (!implicit_RHS) { // LU case
                 /// W = U^T B
                 TeamVectorGemmInternal<Algo::Gemm::Unblocked>
                   ::invoke(member,
@@ -199,6 +212,9 @@ namespace KokkosBatched {
     
             if (do_print) {
                 Kokkos::single(Kokkos::PerTeam(member), [&] () {
+#if KOKKOS_VERSION >= 40200
+                    using Kokkos::printf;
+#endif
                     printf("m=zeros(%d,%d);\n", matrix_rank, nrhs);
                     for (int i=0; i<matrix_rank; ++i) {
                         for (int j=0; j<nrhs; ++j) {
@@ -210,6 +226,9 @@ namespace KokkosBatched {
     
             if (do_print) {
                 Kokkos::single(Kokkos::PerTeam(member), [&] () {
+#if KOKKOS_VERSION >= 40200
+                    using Kokkos::printf;
+#endif
                     printf("T=zeros(%d,%d);\n", m, matrix_rank);
                     for (int i=0; i<m; ++i) {
                         for (int j=0; j<matrix_rank; ++j) {
@@ -231,6 +250,9 @@ namespace KokkosBatched {
     
             if (do_print) {
                 Kokkos::single(Kokkos::PerTeam(member), [&] () {
+#if KOKKOS_VERSION >= 40200
+                    using Kokkos::printf;
+#endif
                     printf("x=zeros(%d,%d);\n", n, nrhs);
                     for (int i=0; i<n; ++i) {
                         for (int j=0; j<nrhs; ++j) {
@@ -249,6 +271,9 @@ namespace KokkosBatched {
                  X, xs0, xs1);
         if (do_print) {
             Kokkos::single(Kokkos::PerTeam(member), [&] () {
+#if KOKKOS_VERSION >= 40200
+                using Kokkos::printf;
+#endif
                 printf("X=zeros(%d,%d);\n", n, nrhs);
                 for (int i=0; i<n; ++i) {
                     for (int j=0; j<nrhs; ++j) {

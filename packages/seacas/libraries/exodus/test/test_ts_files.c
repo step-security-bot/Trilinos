@@ -1,5 +1,5 @@
 /*
- * Copyright(C) 1999-2021 National Technology & Engineering Solutions
+ * Copyright(C) 1999-2021, 2023 National Technology & Engineering Solutions
  * of Sandia, LLC (NTESS).  Under the terms of Contract DE-NA0003525 with
  * NTESS, the U.S. Government retains certain rights in this software.
  *
@@ -55,7 +55,7 @@ void *init_file(void *varg)
   char name[32];
 
   /* Name is "test_{thread}.exo" */
-  sprintf(name, "test%ld.exo", arg->threadid);
+  snprintf(name, 32, "test%ld.exo", arg->threadid);
 
   ex_opts(EX_VERBOSE);
 
@@ -262,11 +262,11 @@ void *init_file(void *varg)
   elem_map = (int *)calloc(num_elem, sizeof(int));
 
   for (i = 1; i <= num_elem; i++) {
-    elem_map[i - 1] = i;
+    elem_map[i - 1] = i * 10;
   }
 
-  error = ex_put_map(exoid, elem_map);
-  printf("after ex_put_map, error = %d\n", error);
+  error = ex_put_id_map(exoid, EX_ELEM_MAP, elem_map);
+  printf("after ex_put_id_map, error = %d\n", error);
 
   if (error) {
     ex_close(exoid);

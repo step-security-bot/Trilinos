@@ -657,19 +657,19 @@ operator*(const PCE<Storage>& a, const PCE<Storage>& b)
   const ordinal_type bsz = b.size();
   const ordinal_type csz = asz > bsz ? asz : bsz;
 
-#if !defined(__CUDA_ARCH__)
+  KOKKOS_IF_ON_HOST((
   TEUCHOS_TEST_FOR_EXCEPTION(
     asz != bsz && asz != 1 && bsz != 1, std::logic_error,
     "Sacado::UQ::PCE::operator*(): input sizes do not match");
-#endif
+  ))
 
   my_cijk_type c_cijk = a.cijk().is_empty() ? b.cijk() : a.cijk();
 
-#if !defined(__CUDA_ARCH__)
+  KOKKOS_IF_ON_HOST((
   TEUCHOS_TEST_FOR_EXCEPTION(
     c_cijk.is_empty() && csz != 1, std::logic_error,
     "Sacado::UQ::PCE::operator*(): empty cijk but expansion size > 1");
-#endif
+  ))
 
   PCE<Storage> c(c_cijk, csz);
   const_pointer ac = a.coeff();
@@ -757,24 +757,24 @@ operator/(const PCE<Storage>& a, const PCE<Storage>& b)
   const ordinal_type bsz = b.size();
   const ordinal_type csz = asz > bsz ? asz : bsz;
   
-#if !defined(__CUDA_ARCH__)
-TEUCHOS_TEST_FOR_EXCEPTION(
+  KOKKOS_IF_ON_HOST((
+  TEUCHOS_TEST_FOR_EXCEPTION(
   asz != bsz && asz != 1 && bsz != 1, std::logic_error,
   "Sacado::UQ::PCE::operator/(): input sizes do not match");
-#endif
+  ))
   my_cijk_type c_cijk = asz == bsz || asz >1 ? a.cijk() : b.cijk();
 
   PCE<Storage> c(c_cijk, csz);
 
-#if defined(__CUDA_ARCH__)
+  KOKKOS_IF_ON_HOST((
   const_pointer ac = a.coeff();
   pointer cc = c.coeff();
   value_type bcz = b.fastAccessCoeff(0);
   for (ordinal_type i=0; i<asz; ++i)
     cc[i] = ac[i]/bcz;
-#endif
+  ))
 
-#if !defined(__CUDA_ARCH__)
+  KOKKOS_IF_ON_HOST((
   if (bsz == 1) {//constant denom
     const_pointer ac = a.coeff();
     const_pointer bc = b.coeff();
@@ -786,7 +786,7 @@ TEUCHOS_TEST_FOR_EXCEPTION(
   else {
    CG_divide(a,b,c);
   }
-#endif
+  ))
 
   return c;
 }
@@ -1220,6 +1220,7 @@ max(const typename PCE<Storage>::value_type& a,
 }
 
 template <typename Storage>
+KOKKOS_INLINE_FUNCTION
 PCE<Storage>
 max(const PCE<Storage>& a,
     const typename PCE<Storage>::value_type& b)
@@ -1545,6 +1546,7 @@ operator >> (std::istream& is, PCE<Storage>& a)
 }
 
 template <typename Storage>
+KOKKOS_INLINE_FUNCTION
 void
 CG_divide(const PCE<Storage>& a, const PCE<Storage>& b, PCE<Storage>& c) {
     typedef typename PCE<Storage>::ordinal_type ordinal_type;

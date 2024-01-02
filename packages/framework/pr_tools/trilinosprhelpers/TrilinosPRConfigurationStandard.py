@@ -10,6 +10,7 @@ import subprocess
 from . import TrilinosPRConfigurationBase
 from gen_config import GenConfig
 from pathlib import Path
+from .sysinfo import gpu_utils
 
 
 class TrilinosPRConfigurationStandard(TrilinosPRConfigurationBase):
@@ -55,16 +56,15 @@ class TrilinosPRConfigurationStandard(TrilinosPRConfigurationBase):
             gc.write_cmake_fragment()
 
         # Execute the call to ctest.
-        # - NOTE: simple_testing.cmake can be found in the TFW_single_configure_support_scripts
-        #         repository.
         cmd = ['ctest',
+               "-V",
                 "-S", f"{self.arg_ctest_driver}",
                f"-Dsource_dir:PATH={self.arg_source_dir}",
                f"-Dbuild_dir:PATH={self.arg_build_dir}",
                f"-Dbuild_name:STRING={self.pullrequest_build_name}",
                 "-Dskip_by_parts_submit:BOOL=OFF",
                 "-Dskip_update_step:BOOL=ON",
-                "-Ddashboard_model:STRING='Experimental'",
+               f"-Ddashboard_model:STRING='{self.dashboard_model}'",
                f"-Ddashboard_track:STRING='{self.arg_pullrequest_cdash_track}'",
                f"-DPARALLEL_LEVEL:STRING={self.concurrency_build}",
                f"-DTEST_PARALLEL_LEVEL:STRING={self.concurrency_test}",
@@ -72,7 +72,21 @@ class TrilinosPRConfigurationStandard(TrilinosPRConfigurationBase):
                f"-Dpackage_enables:FILEPATH={self.arg_filename_packageenables}",
                f"-Dsubprojects_file:FILEPATH={self.arg_filename_subprojects}",
                f"-DCTEST_DROP_SITE:STRING={self.arg_ctest_drop_site}",
+                "-DUSE_EXPLICIT_TRILINOS_CACHEFILE:BOOL=" + "ON" if self.arg_use_explicit_cachefile else "OFF",
              ]
+
+
+        if gpu_utils.has_nvidia_gpus():
+            self.message("-- REMARK: I see that I am running on a machine that has NVidia GPUs; I will feed TriBITS some data enabling GPU resource management")
+            slots_per_gpu = 2
+            gpu_indices = gpu_utils.list_nvidia_gpus()
+            self.message(f"-- REMARK: Using {slots_per_gpu} slots per GPU")
+            self.message(f"-- REMARK: Using GPUs {gpu_indices}")
+            cmd.append(f"-DEXTRA_CONFIGURE_ARGS:STRING=-DTrilinos_AUTOGENERATE_TEST_RESOURCE_FILE:BOOL=ON; -DTrilinos_CUDA_NUM_GPUS:STRING={len(gpu_indices)}; -DTrilinos_CUDA_SLOTS_PER_GPU:STRING={slots_per_gpu}")
+
+        if self.arg_extra_configure_args:
+            cmd.append(f"-DEXTRA_CONFIGURE_ARGS:STRING={self.arg_extra_configure_args}")
+
 
         self.message( "--- ctest version:")
         if not self.args.dry_run:

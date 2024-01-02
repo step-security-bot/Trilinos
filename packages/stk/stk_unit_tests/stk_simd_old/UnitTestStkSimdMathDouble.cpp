@@ -317,7 +317,7 @@ TEST_F(MathFunctionWithTwoDoubleArg, Multiplysign_ScalarAndSimdMatch)
 
 // bool and double
 
-TEST_F(MathFunctionWithBoolAndDoubleArg, DISABLED_Ternary_ScalarAndSimdMatch)
+TEST_F(MathFunctionWithBoolAndDoubleArg, Ternary_ScalarAndSimdMatch)
 {
   test_simd_operator([](bool x, double y) { return x ? y : 0.0; },
                      [](stk::simd::Bool x, stk::simd::Double y) { return stk::math::if_then_else_zero(x,y); },
@@ -659,7 +659,7 @@ TEST(StkSimd, Simd_fmadd)
   std::cout << "SIMD ADD,SUB,MUL,DIV took " << t0 << " seconds" <<  std::endl;
   
   t0 = -stk::get_time_in_seconds();
-#if defined(__INTEL_COMPILER)
+#if defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)
 #pragma novector
 #endif
   for (int n=0; n < N; ++n) {
@@ -698,7 +698,7 @@ TEST(StkSimd, SimdSqrt)
   std::cout << "SIMD SQRT took " << t0 << " seconds" <<  std::endl;
   
   t0 = -stk::get_time_in_seconds();
-#if defined(__INTEL_COMPILER)
+#if defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)
 #pragma novector
 #endif
   for (int n=0; n < N; ++n) {

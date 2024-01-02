@@ -46,18 +46,13 @@
 #ifndef MUELU_REGIONRFACTORY_FWD_HPP
 #define MUELU_REGIONRFACTORY_FWD_HPP
 
-#include "MueLu_ConfigDefs.hpp"
-#if defined(HAVE_MUELU_KOKKOS_REFACTOR)
-
 namespace MueLu {
-  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
-  class RegionRFactory;
+template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+class RegionRFactory;
 }
 
 #ifndef MUELU_REGIONRFACTORY_SHORT
 #define MUELU_REGIONRFACTORY_SHORT
 #endif
 
-#endif
-
-#endif // MUELU_REGIONRFACTORY_FWD_HPP
+#endif  // MUELU_REGIONRFACTORY_FWD_HPP
