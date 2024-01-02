@@ -26,34 +26,16 @@ jobs:
         path: format_patch.txt
         
     - name: Artifact ID test
-      env: 
-        ARTF_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.upload-artf.outputs.artifact-id }}
-        COMMENT_OUTPUT: Your PR updated files in MueLu, but does not respect the Clang Formatting.  Please apply the patch found [here](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.upload-artf.outputs.artifact-id }})
       run: |
         echo "Artifact ID is ${{ steps.upload-artf.outputs.artifact-id }}"
         echo "Link: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts/${{ steps.upload-artf.outputs.artifact-id }}"
-        echo "Atrf URL output = $ARTF_URL"
-        echo "Comment output = $COMMENT_OUTPUT"
-
-    - name: Old school comment post
+        
+    - name: Post artifact in issue comment
       uses: mshick/add-pr-comment@v2.8.1
       if: ${{ hashFiles('format_patch.txt') != '' }}          
       with:
         message: |
           Your PR updated files in MueLu, but does not respect the Clang Formatting.  Please apply the patch found [here](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.upload-artf.outputs.artifact-id }})
-      
-    
-    - name: Post artifact in issue comment
-      uses: actions/github-script@v6
-      if: ${{ hashFiles('format_patch.txt') != '' }}          
-      with:
-        script: |
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: ${{env.COMMENT_OUTPUT}}
-            })
         
     - uses: actions/github-script@v3
       if: ${{ hashFiles('format_patch.txt') != '' }}
