@@ -36,7 +36,7 @@ jobs:
         echo "Comment output = $COMMENT_OUTPUT"
 
     - name: Old school comment post
-      uses: mshick/add-pr-comment@2.8.1
+      uses: mshick/add-pr-comment@v2.8.1
       if: ${{ hashFiles('format_patch.txt') != '' }}          
       with:
         message: |
