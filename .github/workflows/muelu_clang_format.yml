@@ -40,7 +40,7 @@ jobs:
       if: ${{ hashFiles('format_patch.txt') != '' }}          
       with:
         message: |
-          ${{env.COMMENT_OUTPUT}}
+          Your PR updated files in MueLu, but does not respect the Clang Formatting.  Please apply the patch found [here](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.upload-artf.outputs.artifact-id }})
       
     
     - name: Post artifact in issue comment
