@@ -28,7 +28,7 @@ jobs:
     - name: Artifact ID test
       run: |
         echo "Artifact ID is ${{ steps.upload-artf.outputs.artifact-id }}"
-        echo "Link: https://github.com/trilinos/Trilinos/actions/runs/$GITHUB_RUN_ID/artifacts/${{ steps.upload-artf.outputs.artifact-id} }"
+        echo "Link: https://github.com/trilinos/Trilinos/actions/runs/$GITHUB_RUN_ID/artifacts/${{ steps.upload-artf.outputs.artifact-id }}"
         
     - uses: actions/github-script@v3
       if: ${{ hashFiles('format_patch.txt') != '' }}
