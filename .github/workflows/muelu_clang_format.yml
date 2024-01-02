@@ -18,7 +18,7 @@ jobs:
     - run: git diff HEAD > format_patch.txt
     - run: if [ "$(cat format_patch.txt)" == "" ] ; then rm format_patch.txt ; fi
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       id: upload-artf
       if: ${{ hashFiles('format_patch.txt') != '' }}
       with:
@@ -27,8 +27,8 @@ jobs:
         
     - name: Artifact ID test
       run: |
-        echo 'Artifact ID is ${{steps.upload-artf.outputs.artifact-id}}'
-        echo 'Link: https://github.com/trilinos/Trilinos/actions/runs/${GITHUB_RUN_ID}/artifacts/${{steps.upload-artf.outputs.artifact-id}}'
+        echo 'Artifact ID is ${steps.upload-artf.outputs.artifact-id}'
+        echo 'Link: https://github.com/trilinos/Trilinos/actions/runs/$GITHUB_RUN_ID/artifacts/${steps.upload-artf.outputs.artifact-id}'
         
     - uses: actions/github-script@v3
       if: ${{ hashFiles('format_patch.txt') != '' }}
