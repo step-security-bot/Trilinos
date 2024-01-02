@@ -31,10 +31,12 @@ jobs:
         
     - name: Artifact ID test
       env: 
+        ARTF_URL: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts/${{ steps.upload-artf.outputs.artifact-id }}
         COMMENT_OUTPUT: Your PR updated files in MueLu, but does not respect the Clang Formatting.  Please apply the patch found [here](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts/${{ steps.upload-artf.outputs.artifact-id }}
       run: |
         echo "Artifact ID is ${{ steps.upload-artf.outputs.artifact-id }}"
         echo "Link: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts/${{ steps.upload-artf.outputs.artifact-id }}"
+        echo "Comment output = $ARTF_URL"
         echo "Comment output = $COMMENT_OUTPUT"
     
     - name: Post artifact in issue comment
