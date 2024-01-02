@@ -34,6 +34,14 @@ jobs:
         echo "Link: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts/${{ steps.upload-artf.outputs.artifact-id }}"
         echo "Atrf URL output = $ARTF_URL"
         echo "Comment output = $COMMENT_OUTPUT"
+
+    - name: Old school comment post
+      uses: mshick/add-pr-comment@2.8.1
+      if: ${{ hashFiles('format_patch.txt') != '' }}          
+      with:
+        message: |
+          ${{env.COMMENT_OUTPUT}}
+      
     
     - name: Post artifact in issue comment
       uses: actions/github-script@v6
