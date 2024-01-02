@@ -29,6 +29,13 @@ jobs:
       run: |
         echo "Artifact ID is ${{ steps.upload-artf.outputs.artifact-id }}"
         echo "Link: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts/${{ steps.upload-artf.outputs.artifact-id }}"
+    
+    - name: Post artifact in Issue comment
+      uses: mshick/add-pr-comment@v2
+      if: ${{ hashFiles('format_patch.txt') != '' }}          
+      with:
+        message: |
+          "Your PR updated files in MueLu, but does not respect the Clang Formatting.  Please apply the patch found [here](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts/${{ steps.upload-artf.outputs.artifact-id }})"
         
     - uses: actions/github-script@v3
       if: ${{ hashFiles('format_patch.txt') != '' }}
