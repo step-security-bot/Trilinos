@@ -34,6 +34,10 @@ jobs:
         run: |
           mkdir -p /home/Trilinos/src/Trilinos
           mkdir -p /home/Trilinos/build
+      - name: gh pr checkout
+        run: |
+          cd $(mktemp -d)
+          gh pr checkout ${PR_NUMBER}
       - name: Clone trilinos
         uses: actions/checkout@v4
         with:
