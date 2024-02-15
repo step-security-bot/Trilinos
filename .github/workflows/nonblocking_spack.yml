@@ -36,10 +36,7 @@ jobs:
           mkdir -p /home/Trilinos/build
       - name: gh pr checkout
         run: |
-          source /spack/share/spack/setup-env.sh
-          spack load gh
-          cd $(mktemp -d)
-          gh pr checkout ${PR_NUMBER}
+          bash -l -c "spack load gh && cd $(mktemp -d) && gh pr checkout ${PR_NUMBER}"
       - name: Clone trilinos
         uses: actions/checkout@v4
         with:
