@@ -36,6 +36,7 @@ jobs:
           mkdir -p /home/Trilinos/build
       - name: gh pr checkout
         run: |
+          bash -l -c "ls -al / ; ls -al /root ; ls -al /spack"
           bash -l -c "spack load gh && cd $(mktemp -d) && gh pr checkout ${PR_NUMBER}"
       - name: Clone trilinos
         uses: actions/checkout@v4
