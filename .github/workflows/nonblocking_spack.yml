@@ -17,7 +17,6 @@ jobs:
       - name: env
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
-          PR_NUMBER: ${{ github.event.number }}
         run: |
           env
       - name: module list
@@ -37,7 +36,7 @@ jobs:
       - name: gh pr checkout
         run: |
           bash -l -c "spack compiler find"
-          bash -l -c "spack load gh && cd $(mktemp -d) && gh pr checkout ${PR_NUMBER}"
+          bash -l -c "spack load gh && cd $(mktemp -d) && gh pr checkout ${{ github.event.number }}"
       - name: Clone trilinos
         uses: actions/checkout@v4
         with:
