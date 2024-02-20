@@ -17,8 +17,7 @@ jobs:
       - name: env
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: |
-          env
+          GH_TOKEN: ${{ github.token }}
       - name: module list
         shell: bash
         run: |
