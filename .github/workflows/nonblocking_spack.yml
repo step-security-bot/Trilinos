@@ -35,7 +35,7 @@ jobs:
       - name: gh pr checkout
         run: |
           bash -l -c "spack compiler find"
-          bash -l -c "spack load gh && cd $(mktemp -d) && gh pr checkout --repo trilinos/Trilinos ${{ github.event.number }}"
+          bash -l -c "spack load gh && cd $GITHUB_WORKSPACE && gh pr checkout --repo trilinos/Trilinos ${{ github.event.number }}"
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
           GH_TOKEN: ${{ github.token }}
