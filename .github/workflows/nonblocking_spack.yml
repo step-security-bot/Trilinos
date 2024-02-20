@@ -28,6 +28,10 @@ jobs:
         run: |
           mkdir -p /home/Trilinos/src/Trilinos
           mkdir -p /home/Trilinos/build
+      - name: Clone Trilinos
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .
       - name: gh pr checkout
         run: |
           bash -l -c "spack compiler find"
