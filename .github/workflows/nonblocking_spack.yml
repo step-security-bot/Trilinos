@@ -34,23 +34,24 @@ jobs:
           sparse-checkout: .
       - name: gh pr checkout
         run: |
-          bash -l -c "spack compiler find"
-          bash -l -c "spack load gh && cd $GITHUB_WORKSPACE && gh pr checkout --repo trilinos/Trilinos ${{ github.event.number }}"
+          bash -l -c "spack compiler find && spack load gh"
+          bash -l -c "cd $GITHUB_WORKSPACE && gh pr checkout ${{ github.event.number }}"
+          bash -l -c "spack "
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
           GH_TOKEN: ${{ github.token }}
-      - name: Clone trilinos
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Repo status
-        run: |
-          git fetch --all
-          pwd
-          ls -lhat
-          git status
-          git branch -vv
-          git branch -a
+      # - name: Clone trilinos
+      #   uses: actions/checkout@v4
+      #   with:
+      #     fetch-depth: 0
+      # - name: Repo status
+      #   run: |
+      #     git fetch --all
+      #     pwd
+      #     ls -lhat
+      #     git status
+      #     git branch -vv
+      #     git branch -a
       - name: get dependencies
         working-directory: ./packages/framework
         run: |
