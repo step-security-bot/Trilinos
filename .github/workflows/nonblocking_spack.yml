@@ -33,7 +33,7 @@ jobs:
         with:
           sparse-checkout: .
       - name: gh pr checkout
-        shell: bash -l -c
+        shell: bash -ileo pipefail {0}
         run: |
           spack compiler find
           spack load gh
