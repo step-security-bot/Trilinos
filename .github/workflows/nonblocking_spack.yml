@@ -39,7 +39,7 @@ jobs:
           spack load gh
           cd $GITHUB_WORKSPACE
           gh pr checkout ${{ github.event.number }}
-          spack dev-build .
+          spack dev-build trilinos@develop
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
           GH_TOKEN: ${{ github.token }}
