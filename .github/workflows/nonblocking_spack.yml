@@ -35,7 +35,8 @@ jobs:
       - name: gh pr checkout
         shell: bash -lo pipefail {0}
         run: |
-          spack env activate /root
+          cd /root
+          spack env activate .
           spack compiler find
           spack load gh
           cd $GITHUB_WORKSPACE
