@@ -33,8 +33,13 @@ jobs:
         with:
           sparse-checkout: .
       - name: gh pr checkout
+        shell: bash
         run: |
-          bash -l -c "spack compiler find && spack load gh && cd $GITHUB_WORKSPACE && gh pr checkout ${{ github.event.number }} && spack dev-build ."
+          spack compiler find
+          spack load gh
+          cd $GITHUB_WORKSPACE
+          gh pr checkout ${{ github.event.number }}
+          spack dev-build .
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
           GH_TOKEN: ${{ github.token }}
