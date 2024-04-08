@@ -65,7 +65,7 @@ jobs:
 
       - run: |
            echo "Run, Build Application using script"
-            bash -l -c "mkdir -p trilinos_build && cd trilinos_build; 
+            bash -l -c "mkdir -p trilinos_build && cd trilinos_build;"
             bash -l -c "cd trilinos_build ; cmake -G Ninja -DTrilinos_ENABLE_TESTS=OFF -DTrilinos_ENABLE_Krino=OFF .."
             bash -l -c "cd trilinos_build ; ninja"
 
