@@ -58,7 +58,7 @@ jobs:
             bash -l -c "cd trilinos_build ; cmake -G 'Unix Makefiles' -DTrilinos_ENABLE_TESTS=OFF -DTrilinos_ENABLE_Tpetra=ON -DTrilinos_ENABLE_MueLu=ON -DTrilinos_ENABLE_Krino=OFF .."
       - name: Build Trilinos
         run: |
-            bash -l -c "cd trilinos_build ; make -j"
+            bash -l -c "cd trilinos_build ; make -j 2"
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
